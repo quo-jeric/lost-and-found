@@ -1,5 +1,11 @@
 import { pool } from '../config/db.js';
-import { findItemById, insertItem, updateItem } from '../repositories/item-repository.js';
+import {
+  findItemById,
+  insertItem,
+  updateItem,
+  findItems,
+  archiveItem as repoArchiveItem,
+} from '../repositories/item-repository.js';
 import { writeAudit } from '../repositories/audit-repository.js';
 import { AppError } from '../utils/app-error.js';
 
@@ -325,9 +331,90 @@ export async function editItem(itemId, updateData, { actorId, requestId = null, 
  * Retrieve a single item by ID. Read-only; uses the pool directly.
  *
  * @param {number|string} itemId
+ * @param {object} [options]
+ * @param {boolean} [options.isPublic]
  * @returns {Promise<object|null>}
  */
-export async function getItemById(itemId) {
+export async function getItemById(itemId, { isPublic = false } = {}) {
   const validatedId = validateItemId(itemId);
-  return findItemById(pool, validatedId);
+  const item = await findItemById(pool, validatedId, { includeArchived: !isPublic });
+  if (!item) return null;
+  if (isPublic) {
+    const { storage_notes, ...safeItem } = item;
+    return safeItem;
+  }
+  return item;
 }
+
+/**
+ * List items with filtering, pagination, and public data sanitization.
+ *
+ * @param {object} [filters]
+ * @param {object} [pagination]
+ * @param {object} [options]
+ * @param {boolean} [options.isPublic]
+ * @returns {Promise<{ items: object[], total: number, page: number, pageSize: number }>}
+ */
+export async function listItems(filters = {}, pagination = {}, { isPublic = true } = {}) {
+  const safeFilters = { ...filters };
+
+  if (isPublic) {
+    safeFilters.item_status = 'active';
+  }
+
+  const result = await findItems(pool, safeFilters, pagination);
+
+  if (isPublic && Array.isArray(result.items)) {
+    result.items = result.items.map(({ storage_notes, ...item }) => item);
+  }
+
+  return result;
+}
+
+/**
+ * Soft-archive an item by setting its status to 'inactive'.
+ * Admin role required at route level.
+ *
+ * @param {number|string} itemId
+ * @param {object} context
+ * @param {number} context.actorId - Admin user ID
+ * @param {string|null} [context.requestId]
+ * @param {string|null} [context.ipAddress]
+ * @returns {Promise<void>}
+ */
+export async function archiveItem(itemId, context = {}) {
+  const validatedId = validateItemId(itemId);
+  const validatedActorId = validateActorId(context.actorId);
+  const { requestId = null, ipAddress = null } = context;
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    const existingRecord = await findItemById(conn, validatedId, { forUpdate: true, includeArchived: true });
+    if (!existingRecord || existingRecord.item_status === 'inactive') {
+      throw new AppError('Item not found.', { status: 404, code: 'NOT_FOUND' });
+    }
+
+    await repoArchiveItem(conn, validatedId);
+
+    await writeAudit(conn, {
+      tableName: 'items',
+      recordId: validatedId,
+      action: 'ARCHIVE',
+      actorId: validatedActorId,
+      oldValues: existingRecord,
+      newValues: { ...existingRecord, item_status: 'inactive' },
+      requestId,
+      ipAddress,
+    });
+
+    await conn.commit();
+  } catch (err) {
+    await conn.rollback();
+    throw err;
+  } finally {
+    conn.release();
+  }
+}
+

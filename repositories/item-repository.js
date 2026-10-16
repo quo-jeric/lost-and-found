@@ -29,7 +29,7 @@ const ITEM_COLUMNS = [
  * @returns {Promise<object|null>}
  */
 export async function findItemById(conn, itemId, { includeArchived = false, forUpdate = false } = {}) {
-  const archiveClause = includeArchived ? '' : 'AND deleted_at IS NULL';
+  const archiveClause = includeArchived ? '' : "AND item_status = 'active'";
   const lockClause = forUpdate ? 'FOR UPDATE' : '';
   const sql = `
     SELECT ${ITEM_COLUMNS}
@@ -40,6 +40,93 @@ export async function findItemById(conn, itemId, { includeArchived = false, forU
   `;
   const [rows] = await conn.execute(sql, [itemId]);
   return rows[0] || null;
+}
+
+/**
+ * Find items with filtering and pagination.
+ *
+ * @param {import('mysql2/promise').Pool|import('mysql2/promise').Connection} conn
+ * @param {object} [filters]
+ * @param {object} [pagination]
+ * @returns {Promise<{ items: object[], total: number, page: number, pageSize: number }>}
+ */
+export async function findItems(conn, filters = {}, pagination = {}) {
+  const {
+    category_id,
+    location_id,
+    item_status = 'active',
+    search,
+    from_date,
+    to_date,
+  } = filters;
+
+  const conditions = [];
+  const params = [];
+
+  if (category_id !== undefined && category_id !== null && category_id !== '') {
+    conditions.push('category_id = ?');
+    params.push(Number(category_id));
+  }
+
+  if (location_id !== undefined && location_id !== null && location_id !== '') {
+    conditions.push('location_id = ?');
+    params.push(Number(location_id));
+  }
+
+  if (item_status && item_status !== 'all') {
+    conditions.push('item_status = ?');
+    params.push(item_status);
+  }
+
+  if (search && typeof search === 'string' && search.trim() !== '') {
+    conditions.push('(title LIKE ? OR brand LIKE ? OR color LIKE ?)');
+    const term = `%${search.trim()}%`;
+    params.push(term, term, term);
+  }
+
+  if (from_date) {
+    conditions.push('found_at >= ?');
+    params.push(from_date);
+  }
+
+  if (to_date) {
+    conditions.push('found_at <= ?');
+    params.push(to_date);
+  }
+
+  const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+  const page = Math.max(1, Number(pagination.page) || 1);
+  const pageSize = Math.min(100, Math.max(1, Number(pagination.pageSize) || 20));
+  const offset = (page - 1) * pageSize;
+
+  const countSql = `SELECT COUNT(*) AS total FROM items ${whereClause}`;
+  const [countRows] = await conn.query(countSql, params);
+  const total = Number(countRows[0]?.total ?? 0);
+
+  const fetchSql = `
+    SELECT ${ITEM_COLUMNS}
+    FROM items
+    ${whereClause}
+    ORDER BY found_at DESC, item_id DESC
+    LIMIT ? OFFSET ?
+  `;
+  const [rows] = await conn.query(fetchSql, [...params, pageSize, offset]);
+
+  return { items: rows, total, page, pageSize };
+}
+
+/**
+ * Soft-archive an item by setting item_status to 'inactive'.
+ * Never physically deletes rows.
+ *
+ * @param {import('mysql2/promise').Connection} conn
+ * @param {number} itemId
+ * @returns {Promise<void>}
+ */
+export async function archiveItem(conn, itemId) {
+  const sql = `UPDATE items SET item_status = 'inactive' WHERE item_id = ?`;
+  await conn.execute(sql, [itemId]);
 }
 
 /**

@@ -25,6 +25,9 @@ lost-and-found-app/
 ├── config/
 │   ├── index.js                     # Environment variable validation and frozen config export
 │   └── db.js                        # MySQL connection pool (time_zone = +00:00, utf8mb4)
+├── middleware/                      # Express middleware (renamed from middlewares/ per spec)
+│   ├── auth.js                      # requireAuth (401), requireRole factory (401/403), optionalAuth
+│   └── session.js                   # express-session + express-mysql-session factory
 ├── migrations/                      # Forward-only SQL migrations (managed by scripts/migrate.js)
 │   ├── 001_create_users.sql         # users table
 │   ├── 002_create_categories.sql    # categories table
@@ -36,9 +39,20 @@ lost-and-found-app/
 ├── repositories/                    # SQL layer (strict isolation: only repositories execute SQL)
 │   ├── audit-repository.js          # writeAudit(), getAuditLogsForRecord() (sanitizes sensitive fields)
 │   ├── user-repository.js           # findUserById(), findUserByEmail(), createUser(), archiveUser(), restoreUser()
-│   └── item-repository.js           # findItemById() [supports FOR UPDATE], insertItem(), updateItem()
+│   ├── item-repository.js           # findItemById(), findItems(), insertItem(), updateItem(), archiveItem()
+│   └── claim-repository.js          # findClaimById(), findClaims(), findPendingClaimByContact(), insertClaim(), updateClaimStatus()
 ├── services/                        # Business logic layer (auth-agnostic, transaction orchestration)
-│   └── items-service.js             # addItem(), editItem(), getItemById() with payload validation & audit logging
+│   ├── auth-service.js              # login() (timing-safe, argon2id), logout(), hashPassword(), verifyPassword()
+│   ├── items-service.js             # addItem(), editItem(), getItemById(), listItems(), archiveItem()
+│   └── claims-service.js            # raiseClaim(), getClaimById(), listClaims(), reviewClaim()
+├── controllers/
+│   ├── auth-controller.js           # loginHandler, logoutHandler, meHandler (session regenerate/destroy)
+│   ├── item-controller.js           # listItemsHandler, getItemHandler, createItemHandler, updateItemHandler, archiveItemHandler
+│   └── claim-controller.js          # createClaimHandler, listClaimsHandler, getClaimHandler, reviewClaimHandler
+├── routes/
+│   ├── auth-routes.js               # POST /login (public), POST /logout, GET /me (requireAuth)
+│   ├── item-routes.js               # GET /, GET /:id (public/optionalAuth), POST /, PUT /:id (staff), DELETE /:id (admin)
+│   └── claim-routes.js              # POST / (public/optionalAuth), GET /, GET /:id, PATCH /:id/review (staff)
 ├── utils/                           # Shared helpers & error classes
 │   └── app-error.js                 # AppError operational error class (status, code, details)
 ├── scripts/                         # Operational CLI scripts
@@ -49,8 +63,12 @@ lost-and-found-app/
 │   └── database-schema-plan.md      # Detailed DB & migration architecture guide
 ├── tests/                           # Unit and integration test suites
 │   └── unit/
-│       └── items-service.test.js    # 35 unit tests covering addItem, editItem, getItemById, and AppError
-├── app.js                           # Express application setup (kept free of listen() for testing)
+│       ├── auth-middleware.test.js  # 19 unit tests covering requireAuth, requireRole, optionalAuth
+│       ├── items-service.test.js    # 46 unit tests covering addItem, editItem, getItemById, listItems, archiveItem
+│       ├── claims-service.test.js   # 61 unit tests covering raiseClaim, getClaimById, listClaims, reviewClaim
+│       ├── item-controller.test.js  # 9 unit tests covering all item HTTP handlers and envelopes
+│       └── claim-controller.test.js # 8 unit tests covering all claim HTTP handlers and envelopes
+├── app.js                           # Express app setup (session middleware, auth/item/claim routes, error handler)
 ├── server.js                        # HTTP server bootstrap with DB health-check
 ├── package.json                     # Project manifest and scripts
 ├── records.md                       # Progress record and codebase state (this file)
@@ -126,6 +144,70 @@ All migrations are tracked in `schema_migrations` with SHA-256 checksums. Applie
   - `AppError`: Prototype and operational flag verification.
 - **Run command**: `npm test` (passes 35/35 tests in ~500ms).
 
+### 4.5 Claims Repository (`repositories/claim-repository.js`)
+- **`findClaimById(conn, claimId, options)`**: Parameterized query with explicit projection of `CLAIM_COLUMNS`. Supports `{ forUpdate }` for row-level locking.
+- **`findPendingClaimByContact(conn, { itemId, email, phone })`**: Detects an existing `pending` claim for the same item where either the email or phone matches. Uses dynamic `IS NOT NULL` guards to skip null values safely.
+- **`insertClaim(conn, claimData)`**: Parameterized insert that hard-codes `claim_status = 'pending'` in SQL. Returns `insertId`.
+
+### 4.6 Public Claims Service (`services/claims-service.js`)
+- **`raiseClaim(claimData, context)`**:
+  - No `actorId` required — the claimant is an anonymous public user. The audit log records `actorId: null`.
+  - Validates payload pre-connection:
+    - `item_id` (required, positive integer)
+    - `claimant_name` (required, 1–50 chars, trimmed)
+    - Contact presence: at least one of `claimant_email` or `claimant_phone` must be non-empty.
+    - `claimant_email` (optional, validated against email regex when present, max 50 chars)
+    - `claimant_phone` (optional, max 20 chars)
+    - `proof_description` (optional, max 5000 chars)
+  - Within a transaction: verifies item exists and is `'active'`, checks for duplicate pending claim via `findPendingClaimByContact`, inserts claim, re-fetches record, writes audit log (`action: 'INSERT'`, `actorId: null`), commits.
+  - Rolls back automatically on any error; always releases connection in `finally`.
+  - Remaps `ER_NO_REFERENCED_ROW_2` → `AppError(400, 'INVALID_REFERENCE')`.
+  - Custom error codes: `ITEM_INACTIVE` (400), `DUPLICATE_CLAIM` (409).
+- **`getClaimById(claimId)`**:
+  - Validates `claimId` and retrieves claim using `pool` directly without transaction overhead.
+
+### 4.7 Claims Unit Testing Suite (`tests/unit/claims-service.test.js`)
+- **Coverage**: 48 unit tests executed via Vitest.
+- **Test Categories**:
+  - `raiseClaim` success: with email+phone, email only, phone only; trimming, proof_description defaults, actorId=null audit, context forwarding, commit/release assertions.
+  - `raiseClaim` validation failures: each required field, contact presence, format checks, length limits — all fail before acquiring a DB connection.
+  - Item verification: 404 on missing item, 400 `ITEM_INACTIVE` on inactive item.
+  - Duplicate prevention: 409 on pending email match, pending phone match; allows new claim after rejected/accepted prior claim.
+  - Transaction integrity: rollback on `insertClaim` failure, rollback on `writeAudit` failure, release even when rollback itself throws, FK remapping.
+  - `getClaimById`: success retrieval, null on not-found, 400 on invalid ID, no transaction (pool used directly).
+  - `AppError`: prototype and operational flag verification.
+- **Run command**: `npm test` (passes 83/83 tests in ~500ms — 35 items + 48 claims).
+
+### 4.8 Auth Middleware (`middleware/auth.js`)
+- **`requireAuth`**: Checks `req.session.userId` (must be a positive integer). On success sets `req.actorId` and `req.actorRole`. On failure passes `AppError(401, 'UNAUTHORIZED')` to the error handler.
+- **`requireRole(...allowedRoles)`**: Factory returning a middleware that first validates session presence (401), then checks `req.session.role` against `allowedRoles`. Passes `AppError(403, 'FORBIDDEN')` if the role doesn't match. Defaults to deny (empty role list → always 403).
+- **`optionalAuth`**: Always calls `next()`. Sets `req.actorId = req.session.userId` and `req.actorRole = req.session.role` when an authenticated session is present; sets both to `null` for anonymous callers.
+
+### 4.9 Session Middleware (`middleware/session.js`)
+- Exports `createSessionMiddleware()` factory that configures `express-session` with:
+  - Persistent MySQL store via `express-mysql-session` using the shared application pool.
+  - Cookie settings: `httpOnly: true`, `secure` in production, `sameSite: 'lax'`, `maxAge` from config.
+  - `resave: false`, `saveUninitialized: false`.
+  - Auto-creation of the `sessions` table; expired session cleanup every 15 minutes.
+
+### 4.10 Auth Service (`services/auth-service.js`)
+- **`login({ email, password }, context)`**: Normalizes email, looks up user via `findUserByEmail`, runs timing-safe argon2id verify (runs dummy hash if email not found to prevent timing attacks). On success, writes `LOGIN` audit entry and returns `{ id, fullName, email, role }`. On failure, writes `LOGIN_FAILED` and throws `AppError(401, 'INVALID_CREDENTIALS')`. Session management is left to the controller.
+- **`logout({ actorId, ... })`**: Writes a `LOGOUT` audit entry. Session destruction left to the controller.
+- **`hashPassword(password)`**: Returns argon2id hash for use during user creation.
+- **`verifyPassword(hash, password)`**: Returns boolean; swallows argon2 errors as `false`.
+
+### 4.11 Auth Controller & Routes
+- **`controllers/auth-controller.js`**:
+  - `loginHandler`: Calls `auth-service.login()`, regenerates session ID (prevents fixation), stores `userId` and `role` in session, responds 200 with sanitized user object.
+  - `logoutHandler`: Calls `auth-service.logout()`, destroys session, clears `connect.sid` cookie, responds 204.
+  - `meHandler`: Fetches live user from `user-repository`, handles stale session (deactivated user), responds 200.
+- **`routes/auth-routes.js`**: Mounts on `/api/v1/auth`. Public: `POST /login`. Protected: `POST /logout`, `GET /me`.
+
+### 4.12 Auth Middleware Unit Testing (`tests/unit/auth-middleware.test.js`)
+- **Coverage**: 19 unit tests executed via Vitest (no DB, no network — pure mock `req`/`res`/`next`).
+- **Test Categories**: `requireAuth` (6 tests: success, null role, no session, null userId, userId=0, string userId), `requireRole` (8 tests: single role match, multi-role match, array-form, unauthenticated, no userId, wrong role, no role, empty allowlist), `optionalAuth` (5 tests: authenticated, no session, userId=0, string userId, no role).
+- **Run command**: `npm test` (passes 102/102 tests — 19 auth + 35 items + 48 claims).
+
 ---
 
 ## 5. Architectural Rules & Standards
@@ -162,26 +244,81 @@ All migrations are tracked in `schema_migrations` with SHA-256 checksums. Applie
 - Added Vitest (`v5.0.5`) dev dependency and updated `package.json` scripts (`test`, `test:watch`).
 - Created unit test suite in `tests/unit/items-service.test.js` (35 tests passing).
 
+### Milestone 4: Public Claims Raising Feature Implementation
+- Created `repositories/claim-repository.js` with `findClaimById()`, `findPendingClaimByContact()`, and `insertClaim()` using explicit column projections and parameterized queries.
+- Created `services/claims-service.js` with `raiseClaim()` and `getClaimById()` featuring:
+  - Unauthenticated public access (`actorId: null` in audit log).
+  - Fail-fast input validation before acquiring any DB connection.
+  - Atomic transaction with item existence/status check, duplicate pending claim detection, insert, and audit logging.
+  - Custom error codes: `ITEM_INACTIVE` (400), `DUPLICATE_CLAIM` (409), `INVALID_REFERENCE` (400).
+- Created unit test suite in `tests/unit/claims-service.test.js` (48 tests passing).
+- Total test suite: 83/83 tests passing (`items-service` 35 + `claims-service` 48).
+
+### Milestone 5: Session-Based Authentication Implementation
+- Normalized `middlewares/` directory to `middleware/` per `specs/global-spec.md`.
+- Installed production dependencies: `express-session`, `express-mysql-session`, `argon2`.
+- Implemented `middleware/session.js` — persistent MySQL session store factory with cookie security settings.
+- Implemented `middleware/auth.js` — `requireAuth`, `requireRole` (factory, default-deny), `optionalAuth`.
+- Implemented `services/auth-service.js` — timing-safe login (argon2id + dummy hash on email miss), logout, and auth audit logging.
+- Updated `repositories/user-repository.js` — aligned column projections with actual DB schema (`user_id`, `full_name`, `role`, `is_active`).
+- Implemented `controllers/auth-controller.js` and `routes/auth-routes.js`.
+- Wired session middleware, auth routes, 404 handler, and centralised error handler into `app.js`.
+- Created unit test suite `tests/unit/auth-middleware.test.js` (19 tests).
+- Total test suite: **102/102 tests passing** (19 auth + 35 items + 48 claims).
+
+### Milestone 6: HTTP Controllers & Routes for Items and Claims
+- Fixed soft-delete check in `repositories/item-repository.js` from `deleted_at IS NULL` to `item_status = 'active'`.
+- Added repository query functions:
+  - `findItems(conn, filters, pagination)` and `archiveItem(conn, itemId)` in `item-repository.js`.
+  - `findClaims(conn, filters, pagination)` and `updateClaimStatus(conn, claimId, updates)` in `claim-repository.js`.
+- Extended domain services:
+  - `items-service.js`: Added `listItems` with public data sanitization (`storage_notes` stripped, `item_status = 'active'` forced), `archiveItem` with transactional audit logging (`action: 'ARCHIVE'`), and `getItemById` backwards-compatible signature with optional public sanitization.
+  - `claims-service.js`: Added `listClaims` (staff-only), and `reviewClaim` (atomic transaction: row-locking, status check, item deactivation with audit log if approved, claim status update, and claim audit log with `action: 'UPDATE'`).
+- Implemented controllers:
+  - `controllers/item-controller.js`: `listItemsHandler`, `getItemHandler`, `createItemHandler`, `updateItemHandler`, `archiveItemHandler`.
+  - `controllers/claim-controller.js`: `createClaimHandler`, `listClaimsHandler`, `getClaimHandler`, `reviewClaimHandler`.
+- Implemented routes:
+  - `routes/item-routes.js`: Public `GET /` and `GET /:id` with `optionalAuth`; staff `POST /` and `PUT /:id` with `requireRole('admin', 'guard')`; admin `DELETE /:id` with `requireRole('admin')`.
+  - `routes/claim-routes.js`: Public `POST /` with `optionalAuth`; staff `GET /`, `GET /:id`, and `PATCH /:id/review` with `requireRole('admin', 'guard')`.
+- Mounted `/api/v1/items` and `/api/v1/claims` in `app.js`.
+- Non-functional verification: verified `npm run check:no-delete` (0 occurrences of physical DELETE/TRUNCATE).
+- Expanded unit test suites:
+  - Added unit tests for `listItems`, `archiveItem`, and public sanitization in `tests/unit/items-service.test.js` (46 tests).
+  - Added unit tests for `listClaims` and `reviewClaim` in `tests/unit/claims-service.test.js` (61 tests).
+  - Created `tests/unit/item-controller.test.js` (9 tests).
+  - Created `tests/unit/claim-controller.test.js` (8 tests).
+- Total test suite: **143/143 tests passing** (19 auth + 46 items + 61 claims + 9 item-ctrl + 8 claim-ctrl).
+
 ---
 
 ## 7. Upcoming Roadmap & Pending Tasks
 
-- [ ] **HTTP Controllers & Routes for Items**:
-  - Implement `controllers/item-controller.js` to handle request parsing, context extraction (`req.session.userId`, `req.ip`, `req.id`), and standardized JSON responses.
-  - Implement `routes/item-routes.js` with endpoint definitions:
-    - `POST /api/v1/items` (create lost item)
-    - `PUT /api/v1/items/:id` (edit lost item)
-    - `GET /api/v1/items/:id` (fetch lost item details)
-    - `GET /api/v1/items` (list/search lost items with pagination)
-  - Mount items routes in `app.js`.
-- [ ] **Auth & Session Middleware**:
-  - Implement `middleware/auth.js` (`requireAuth`, `requireRole('admin', 'guard')`).
-  - Session configuration with persistent MySQL session store (`express-mysql-session`).
+- [x] **HTTP Controllers & Routes for Items**:
+  - Implemented `controllers/item-controller.js` and `routes/item-routes.js`.
+  - Mounted on `/api/v1/items` in `app.js`.
+  - Unit tests passing.
+- [x] **HTTP Controllers & Routes for Claims**:
+  - Implemented `controllers/claim-controller.js` and `routes/claim-routes.js`.
+  - Mounted on `/api/v1/claims` in `app.js`.
+  - Unit tests passing.
+- [x] **Claims Review Workflow (Staff)**:
+  - Implemented `reviewClaim(claimId, payload, context)` in `services/claims-service.js` with item deactivation and transactional audit logging.
+- [x] **Auth & Session Middleware**:
+  - `middleware/auth.js` (`requireAuth`, `requireRole`, `optionalAuth`) — done.
+  - `middleware/session.js` (persistent MySQL session store) — done.
+  - `services/auth-service.js` (login, logout, argon2id hashing) — done.
+  - `controllers/auth-controller.js` + `routes/auth-routes.js` — done.
+  - Unit tests in `tests/unit/auth-middleware.test.js` (19 tests) — done.
 - [ ] **Image Upload Handling**:
   - Configure file upload middleware (e.g. Multer) with file type validation and size limits.
   - Map uploaded image paths to `image_url` prior to invoking `items-service.js`.
-- [ ] **Claims Management Workflow**:
-  - Implement `repositories/claim-repository.js`.
-  - Implement `services/claims-service.js` (create claim, review claim, approve/reject claim).
+- [x] **Public Claims Raising (Service & Repository)**:
+  - `repositories/claim-repository.js` — done.
+  - `services/claims-service.js` (`raiseClaim`, `getClaimById`) — done.
+  - Unit tests in `tests/unit/claims-service.test.js` (61 tests) — done.
 - [ ] **Integration Tests**:
-  - Supertest HTTP test suite for items endpoints in `tests/integration/items.test.js`.
+  - Supertest HTTP test suite for auth + items + claims endpoints.
+  - `tests/integration/auth.test.js`: login, logout, /me, 401 on protected routes.
+  - `tests/integration/items.test.js`: public GET, protected POST/PUT/DELETE.
+  - `tests/integration/claims.test.js`: public POST, staff GET/PATCH.
+
