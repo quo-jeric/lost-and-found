@@ -1,55 +1,66 @@
 import { pool } from '../config/db.js';
 import { writeAudit } from './audit-repository.js';
 
+// Projection for all user queries. Aliases user_id -> id so the rest of the
+// codebase always works with `user.id` regardless of the underlying column name.
 const USER_COLUMNS = [
-  'id',
+  'user_id AS id',
+  'full_name',
   'email',
   'password_hash',
+  'role',
+  'is_active',
   'created_at',
   'updated_at',
-  'created_by',
-  'updated_by',
-  'deleted_at',
-  'deleted_by',
 ].join(', ');
 
 /**
- * Find user by ID. Excludes archived users by default.
+ * Find an active user by their primary key.
+ *
+ * @param {number} id
+ * @param {{ conn?: import('mysql2/promise').Pool|import('mysql2/promise').Connection }} [options]
+ * @returns {Promise<Object|null>}
  */
-export async function findUserById(id, { conn = pool, includeArchived = false } = {}) {
-  const whereDeleted = includeArchived ? '' : 'AND deleted_at IS NULL';
-  const sql = `SELECT ${USER_COLUMNS} FROM users WHERE id = ? ${whereDeleted} LIMIT 1`;
+export async function findUserById(id, { conn = pool } = {}) {
+  const sql = `SELECT ${USER_COLUMNS} FROM users WHERE user_id = ? AND is_active = true LIMIT 1`;
   const [rows] = await conn.execute(sql, [id]);
   return rows[0] || null;
 }
 
 /**
- * Find active user by email.
+ * Find an active user by email address.
+ *
+ * @param {string} email
+ * @param {{ conn?: import('mysql2/promise').Pool|import('mysql2/promise').Connection }} [options]
+ * @returns {Promise<Object|null>}
  */
 export async function findUserByEmail(email, { conn = pool } = {}) {
-  const sql = `SELECT ${USER_COLUMNS} FROM users WHERE email = ? AND deleted_at IS NULL LIMIT 1`;
+  const sql = `SELECT ${USER_COLUMNS} FROM users WHERE email = ? AND is_active = true LIMIT 1`;
   const [rows] = await conn.execute(sql, [email]);
   return rows[0] || null;
 }
 
 /**
- * Create a new user with audit log in the provided transaction.
+ * Create a new user within a caller-supplied transaction.
+ *
+ * @param {{ fullName: string, email: string, passwordHash: string, role?: string }} userData
+ * @param {{ actorId?: number|null, conn: import('mysql2/promise').Connection }} ctx
+ * @returns {Promise<Object>} The newly created user row
  */
-export async function createUser({ email, passwordHash }, { actorId = null, conn }) {
+export async function createUser(
+  { fullName, email, passwordHash, role = 'user' },
+  { actorId = null, conn },
+) {
   if (!conn) {
     throw new Error('Active transaction connection is required for createUser');
   }
 
   const sql = `
-    INSERT INTO users (
-      email,
-      password_hash,
-      created_by,
-      updated_by
-    ) VALUES (?, ?, ?, ?)
+    INSERT INTO users (full_name, email, password_hash, role)
+    VALUES (?, ?, ?, ?)
   `;
 
-  const [result] = await conn.execute(sql, [email, passwordHash, actorId, actorId]);
+  const [result] = await conn.execute(sql, [fullName, email, passwordHash, role]);
   const newUserId = result.insertId;
 
   await writeAudit(conn, {
@@ -57,14 +68,18 @@ export async function createUser({ email, passwordHash }, { actorId = null, conn
     recordId: newUserId,
     action: 'INSERT',
     actorId,
-    newValues: { id: newUserId, email, created_by: actorId },
+    newValues: { id: newUserId, full_name: fullName, email, role },
   });
 
   return findUserById(newUserId, { conn });
 }
 
 /**
- * Archive a user (soft delete). Never physically deletes.
+ * Deactivate (soft-archive) a user. Never physically deletes.
+ *
+ * @param {number} id
+ * @param {{ actorId: number, conn: import('mysql2/promise').Connection }} ctx
+ * @returns {Promise<Object|null>} The user as it was before archival, or null if not found
  */
 export async function archiveUser(id, { actorId, conn }) {
   if (!conn) {
@@ -72,7 +87,7 @@ export async function archiveUser(id, { actorId, conn }) {
   }
 
   const [rows] = await conn.execute(
-    'SELECT id, email FROM users WHERE id = ? AND deleted_at IS NULL FOR UPDATE',
+    `SELECT ${USER_COLUMNS} FROM users WHERE user_id = ? AND is_active = true FOR UPDATE`,
     [id],
   );
 
@@ -82,25 +97,26 @@ export async function archiveUser(id, { actorId, conn }) {
 
   const existing = rows[0];
 
-  await conn.execute(
-    'UPDATE users SET deleted_at = CURRENT_TIMESTAMP, deleted_by = ?, updated_by = ? WHERE id = ?',
-    [actorId, actorId, id],
-  );
+  await conn.execute('UPDATE users SET is_active = false WHERE user_id = ?', [id]);
 
   await writeAudit(conn, {
     tableName: 'users',
     recordId: id,
     action: 'ARCHIVE',
     actorId,
-    oldValues: existing,
-    newValues: { deleted_by: actorId },
+    oldValues: { id: existing.id, email: existing.email, role: existing.role },
+    newValues: { is_active: false },
   });
 
   return existing;
 }
 
 /**
- * Restore an archived user.
+ * Reactivate an archived user.
+ *
+ * @param {number} id
+ * @param {{ actorId: number, conn: import('mysql2/promise').Connection }} ctx
+ * @returns {Promise<Object|null>} The restored user, or null if not found
  */
 export async function restoreUser(id, { actorId, conn }) {
   if (!conn) {
@@ -108,7 +124,7 @@ export async function restoreUser(id, { actorId, conn }) {
   }
 
   const [rows] = await conn.execute(
-    'SELECT id, email FROM users WHERE id = ? AND deleted_at IS NOT NULL FOR UPDATE',
+    `SELECT ${USER_COLUMNS} FROM users WHERE user_id = ? AND is_active = false FOR UPDATE`,
     [id],
   );
 
@@ -118,18 +134,15 @@ export async function restoreUser(id, { actorId, conn }) {
 
   const existing = rows[0];
 
-  await conn.execute(
-    'UPDATE users SET deleted_at = NULL, deleted_by = NULL, updated_by = ? WHERE id = ?',
-    [actorId, id],
-  );
+  await conn.execute('UPDATE users SET is_active = true WHERE user_id = ?', [id]);
 
   await writeAudit(conn, {
     tableName: 'users',
     recordId: id,
     action: 'RESTORE',
     actorId,
-    oldValues: existing,
-    newValues: { restored_by: actorId },
+    oldValues: { id: existing.id, email: existing.email, is_active: false },
+    newValues: { is_active: true },
   });
 
   return findUserById(id, { conn });
