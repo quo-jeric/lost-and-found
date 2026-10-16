@@ -8,7 +8,9 @@
     "dev": "nodemon server.js",
     "start": "node server.js",
     "db:migrate": "node scripts/migrate.js",
-    "check:no-delete": "! grep -rniE '(DELETE[[:space:]]+FROM|REPLACE[[:space:]]+INTO|TRUNCATE)' repositories services controllers routes middleware"
+    "check:no-delete": "! grep -rniE '(DELETE[[:space:]]+FROM|REPLACE[[:space:]]+INTO|TRUNCATE)' repositories services controllers routes middleware",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "keywords": [],
   "author": "",
@@ -19,6 +21,7 @@
     "mysql2": "^3.24.6"
   },
   "devDependencies": {
-    "nodemon": "^3.1.14"
+    "nodemon": "^3.1.14",
+    "vitest": "^5.0.5"
   }
 }
