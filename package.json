@@ -1,17 +1,22 @@
 {
   "name": "lost-and-found-app",
   "version": "1.0.0",
+  "type": "module",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "start": "node server.js",
+    "db:migrate": "node scripts/migrate.js",
+    "check:no-delete": "! grep -rniE '(DELETE[[:space:]]+FROM|REPLACE[[:space:]]+INTO|TRUNCATE)' repositories services controllers routes middleware"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "dotenv": "^18.0.3",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "mysql2": "^3.24.6"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"

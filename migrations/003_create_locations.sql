@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS locations (
+    location_id INT AUTO_INCREMENT PRIMARY KEY,
+    location_name VARCHAR(50) NOT NULL
+    
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
