@@ -11,6 +11,10 @@ A backend service for a Lost and Found tracking system built with **Node.js**, *
 - **Transactional Audit Trail:** Every business write and auth event writes an audit log in the same transaction, automatically stripping sensitive credentials.
 - **Least-Privilege Database Users:** Dedicated roles for runtime application (`laf_app`), migrations (`laf_migrate`), and testing (`laf_test`).
 - **Strict SQL Isolation:** Repository layer pattern with parameterized queries and explicit column selections (no `SELECT *`).
+- **Core Items Management:** Services for creating, updating, and querying lost items with payload validation, row-locking edits, and transactional audit logs.
+
+> 💡 **For AI Agents & Developers:**
+> Before executing tasks, always inspect [`records.md`](./records.md) for the latest system state, applied migrations, implemented modules, and development roadmap.
 
 ---
 
@@ -49,6 +53,12 @@ Key environment variables:
    npm run db:migrate
    ```
 
+### 5. Running Tests
+Run unit tests with Vitest:
+```bash
+npm test
+```
+
 ---
 
 ## Commands
@@ -59,6 +69,8 @@ Key environment variables:
 | `npm start` | Starts server in production mode |
 | `npm run db:migrate` | Runs all pending database migrations in order |
 | `npm run check:no-delete` | Lints repository/service files to enforce no physical `DELETE` or `TRUNCATE` statements |
+| `npm test` | Runs the unit test suite with Vitest |
+| `npm run test:watch` | Runs Vitest in watch mode for active development |
 
 ---
 
