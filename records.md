@@ -36,9 +36,11 @@ lost-and-found-app/
 ├── repositories/                    # SQL layer (strict isolation: only repositories execute SQL)
 │   ├── audit-repository.js          # writeAudit(), getAuditLogsForRecord() (sanitizes sensitive fields)
 │   ├── user-repository.js           # findUserById(), findUserByEmail(), createUser(), archiveUser(), restoreUser()
-│   └── item-repository.js           # findItemById() [supports FOR UPDATE], insertItem(), updateItem()
+│   ├── item-repository.js           # findItemById() [supports FOR UPDATE], insertItem(), updateItem()
+│   └── claim-repository.js          # findClaimById(), findPendingClaimByContact(), insertClaim()
 ├── services/                        # Business logic layer (auth-agnostic, transaction orchestration)
-│   └── items-service.js             # addItem(), editItem(), getItemById() with payload validation & audit logging
+│   ├── items-service.js             # addItem(), editItem(), getItemById() with payload validation & audit logging
+│   └── claims-service.js            # raiseClaim() (public, no auth), getClaimById() with validation & audit logging
 ├── utils/                           # Shared helpers & error classes
 │   └── app-error.js                 # AppError operational error class (status, code, details)
 ├── scripts/                         # Operational CLI scripts
@@ -49,7 +51,8 @@ lost-and-found-app/
 │   └── database-schema-plan.md      # Detailed DB & migration architecture guide
 ├── tests/                           # Unit and integration test suites
 │   └── unit/
-│       └── items-service.test.js    # 35 unit tests covering addItem, editItem, getItemById, and AppError
+│       ├── items-service.test.js    # 35 unit tests covering addItem, editItem, getItemById, and AppError
+│       └── claims-service.test.js   # 48 unit tests covering raiseClaim, getClaimById, validation, rollback, and duplicate detection
 ├── app.js                           # Express application setup (kept free of listen() for testing)
 ├── server.js                        # HTTP server bootstrap with DB health-check
 ├── package.json                     # Project manifest and scripts
@@ -126,6 +129,40 @@ All migrations are tracked in `schema_migrations` with SHA-256 checksums. Applie
   - `AppError`: Prototype and operational flag verification.
 - **Run command**: `npm test` (passes 35/35 tests in ~500ms).
 
+### 4.5 Claims Repository (`repositories/claim-repository.js`)
+- **`findClaimById(conn, claimId, options)`**: Parameterized query with explicit projection of `CLAIM_COLUMNS`. Supports `{ forUpdate }` for row-level locking.
+- **`findPendingClaimByContact(conn, { itemId, email, phone })`**: Detects an existing `pending` claim for the same item where either the email or phone matches. Uses dynamic `IS NOT NULL` guards to skip null values safely.
+- **`insertClaim(conn, claimData)`**: Parameterized insert that hard-codes `claim_status = 'pending'` in SQL. Returns `insertId`.
+
+### 4.6 Public Claims Service (`services/claims-service.js`)
+- **`raiseClaim(claimData, context)`**:
+  - No `actorId` required — the claimant is an anonymous public user. The audit log records `actorId: null`.
+  - Validates payload pre-connection:
+    - `item_id` (required, positive integer)
+    - `claimant_name` (required, 1–50 chars, trimmed)
+    - Contact presence: at least one of `claimant_email` or `claimant_phone` must be non-empty.
+    - `claimant_email` (optional, validated against email regex when present, max 50 chars)
+    - `claimant_phone` (optional, max 20 chars)
+    - `proof_description` (optional, max 5000 chars)
+  - Within a transaction: verifies item exists and is `'active'`, checks for duplicate pending claim via `findPendingClaimByContact`, inserts claim, re-fetches record, writes audit log (`action: 'INSERT'`, `actorId: null`), commits.
+  - Rolls back automatically on any error; always releases connection in `finally`.
+  - Remaps `ER_NO_REFERENCED_ROW_2` → `AppError(400, 'INVALID_REFERENCE')`.
+  - Custom error codes: `ITEM_INACTIVE` (400), `DUPLICATE_CLAIM` (409).
+- **`getClaimById(claimId)`**:
+  - Validates `claimId` and retrieves claim using `pool` directly without transaction overhead.
+
+### 4.7 Claims Unit Testing Suite (`tests/unit/claims-service.test.js`)
+- **Coverage**: 48 unit tests executed via Vitest.
+- **Test Categories**:
+  - `raiseClaim` success: with email+phone, email only, phone only; trimming, proof_description defaults, actorId=null audit, context forwarding, commit/release assertions.
+  - `raiseClaim` validation failures: each required field, contact presence, format checks, length limits — all fail before acquiring a DB connection.
+  - Item verification: 404 on missing item, 400 `ITEM_INACTIVE` on inactive item.
+  - Duplicate prevention: 409 on pending email match, pending phone match; allows new claim after rejected/accepted prior claim.
+  - Transaction integrity: rollback on `insertClaim` failure, rollback on `writeAudit` failure, release even when rollback itself throws, FK remapping.
+  - `getClaimById`: success retrieval, null on not-found, 400 on invalid ID, no transaction (pool used directly).
+  - `AppError`: prototype and operational flag verification.
+- **Run command**: `npm test` (passes 83/83 tests in ~500ms — 35 items + 48 claims).
+
 ---
 
 ## 5. Architectural Rules & Standards
@@ -162,6 +199,16 @@ All migrations are tracked in `schema_migrations` with SHA-256 checksums. Applie
 - Added Vitest (`v5.0.5`) dev dependency and updated `package.json` scripts (`test`, `test:watch`).
 - Created unit test suite in `tests/unit/items-service.test.js` (35 tests passing).
 
+### Milestone 4: Public Claims Raising Feature Implementation
+- Created `repositories/claim-repository.js` with `findClaimById()`, `findPendingClaimByContact()`, and `insertClaim()` using explicit column projections and parameterized queries.
+- Created `services/claims-service.js` with `raiseClaim()` and `getClaimById()` featuring:
+  - Unauthenticated public access (`actorId: null` in audit log).
+  - Fail-fast input validation before acquiring any DB connection.
+  - Atomic transaction with item existence/status check, duplicate pending claim detection, insert, and audit logging.
+  - Custom error codes: `ITEM_INACTIVE` (400), `DUPLICATE_CLAIM` (409), `INVALID_REFERENCE` (400).
+- Created unit test suite in `tests/unit/claims-service.test.js` (48 tests passing).
+- Total test suite: 83/83 tests passing (`items-service` 35 + `claims-service` 48).
+
 ---
 
 ## 7. Upcoming Roadmap & Pending Tasks
@@ -180,8 +227,11 @@ All migrations are tracked in `schema_migrations` with SHA-256 checksums. Applie
 - [ ] **Image Upload Handling**:
   - Configure file upload middleware (e.g. Multer) with file type validation and size limits.
   - Map uploaded image paths to `image_url` prior to invoking `items-service.js`.
-- [ ] **Claims Management Workflow**:
-  - Implement `repositories/claim-repository.js`.
-  - Implement `services/claims-service.js` (create claim, review claim, approve/reject claim).
+- [x] **Public Claims Raising (Service & Repository)**:
+  - `repositories/claim-repository.js` — done.
+  - `services/claims-service.js` (`raiseClaim`, `getClaimById`) — done.
+  - Unit tests in `tests/unit/claims-service.test.js` (48 tests) — done.
+- [ ] **Claims Review Workflow (Staff)**:
+  - Implement `reviewClaim(claimId, decision, context)` in `services/claims-service.js` for authenticated staff to `approve` or `reject` claims.
 - [ ] **Integration Tests**:
   - Supertest HTTP test suite for items endpoints in `tests/integration/items.test.js`.
