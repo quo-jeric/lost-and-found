@@ -107,3 +107,82 @@ export async function insertClaim(conn, claimData) {
 
   return result.insertId;
 }
+
+/**
+ * Find claims with filtering and pagination.
+ *
+ * @param {import('mysql2/promise').Pool|import('mysql2/promise').Connection} conn
+ * @param {object} [filters]
+ * @param {object} [pagination]
+ * @returns {Promise<{ claims: object[], total: number, page: number, pageSize: number }>}
+ */
+export async function findClaims(conn, filters = {}, pagination = {}) {
+  const {
+    item_id,
+    claim_status,
+    search,
+  } = filters;
+
+  const conditions = [];
+  const params = [];
+
+  if (item_id !== undefined && item_id !== null && item_id !== '') {
+    conditions.push('item_id = ?');
+    params.push(Number(item_id));
+  }
+
+  if (claim_status) {
+    conditions.push('claim_status = ?');
+    params.push(claim_status);
+  }
+
+  if (search && typeof search === 'string' && search.trim() !== '') {
+    conditions.push('(claimant_name LIKE ? OR claimant_email LIKE ? OR claimant_phone LIKE ?)');
+    const term = `%${search.trim()}%`;
+    params.push(term, term, term);
+  }
+
+  const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+  const page = Math.max(1, Number(pagination.page) || 1);
+  const pageSize = Math.min(100, Math.max(1, Number(pagination.pageSize) || 20));
+  const offset = (page - 1) * pageSize;
+
+  const countSql = `SELECT COUNT(*) AS total FROM claims ${whereClause}`;
+  const [countRows] = await conn.query(countSql, params);
+  const total = Number(countRows[0]?.total ?? 0);
+
+  const fetchSql = `
+    SELECT ${CLAIM_COLUMNS}
+    FROM claims
+    ${whereClause}
+    ORDER BY created_at DESC, claim_id DESC
+    LIMIT ? OFFSET ?
+  `;
+  const [rows] = await conn.query(fetchSql, [...params, pageSize, offset]);
+
+  return { claims: rows, total, page, pageSize };
+}
+
+/**
+ * Update a claim's review status, handler, notes, and resolution timestamp.
+ * Must be called within an open transaction.
+ *
+ * @param {import('mysql2/promise').Connection} conn - Active transaction connection
+ * @param {number} claimId
+ * @param {object} updates
+ * @param {'accepted'|'rejected'} updates.status
+ * @param {number} updates.processedBy
+ * @param {string|null} [updates.processingNotes]
+ * @param {Date|string} [updates.resolvedAt]
+ * @returns {Promise<void>}
+ */
+export async function updateClaimStatus(conn, claimId, { status, processedBy, processingNotes = null, resolvedAt = new Date() }) {
+  const sql = `
+    UPDATE claims
+    SET claim_status = ?, processed_by = ?, processing_notes = ?, resolved_at = ?
+    WHERE claim_id = ?
+  `;
+  await conn.execute(sql, [status, processedBy, processingNotes, resolvedAt, claimId]);
+}
+

@@ -15,6 +15,8 @@ vi.mock('../../repositories/item-repository.js', () => ({
   findItemById: vi.fn(),
   insertItem: vi.fn(),
   updateItem: vi.fn(),
+  findItems: vi.fn(),
+  archiveItem: vi.fn(),
 }));
 
 vi.mock('../../repositories/audit-repository.js', () => ({
@@ -22,9 +24,15 @@ vi.mock('../../repositories/audit-repository.js', () => ({
 }));
 
 // Now import the service (mocks are in place)
-import { addItem, editItem, getItemById } from '../../services/items-service.js';
+import { addItem, editItem, getItemById, listItems, archiveItem } from '../../services/items-service.js';
 import { pool } from '../../config/db.js';
-import { findItemById, insertItem, updateItem } from '../../repositories/item-repository.js';
+import {
+  findItemById,
+  insertItem,
+  updateItem,
+  findItems,
+  archiveItem as repoArchiveItem,
+} from '../../repositories/item-repository.js';
 import { writeAudit } from '../../repositories/audit-repository.js';
 import { AppError } from '../../utils/app-error.js';
 
@@ -443,6 +451,21 @@ describe('getItemById()', () => {
     expect(result).toEqual(DB_ITEM);
   });
 
+  it('strips storage_notes when isPublic is true', async () => {
+    findItemById.mockResolvedValue(DB_ITEM);
+    const result = await getItemById(42, { isPublic: true });
+    expect(result).not.toBeNull();
+    expect(result.storage_notes).toBeUndefined();
+    expect(result.title).toBe(DB_ITEM.title);
+  });
+
+  it('preserves storage_notes when isPublic is false', async () => {
+    findItemById.mockResolvedValue(DB_ITEM);
+    const result = await getItemById(42, { isPublic: false });
+    expect(result).toEqual(DB_ITEM);
+    expect(result.storage_notes).toBe(DB_ITEM.storage_notes);
+  });
+
   it('returns null when the item does not exist', async () => {
     findItemById.mockResolvedValue(null);
     const result = await getItemById(999);
@@ -456,6 +479,160 @@ describe('getItemById()', () => {
     });
   });
 });
+
+// ── listItems ─────────────────────────────────────────────────────────────────
+
+describe('listItems()', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('strips storage_notes and forces active status for public callers', async () => {
+    const rawItems = [
+      { item_id: 1, title: 'Item 1', storage_notes: 'Cabinet A', item_status: 'active' },
+      { item_id: 2, title: 'Item 2', storage_notes: 'Vault B', item_status: 'active' },
+    ];
+    findItems.mockResolvedValue({ items: rawItems, total: 2, page: 1, pageSize: 20 });
+
+    const result = await listItems({}, {}, { isPublic: true });
+
+    expect(findItems).toHaveBeenCalledWith(
+      pool,
+      expect.objectContaining({ item_status: 'active' }),
+      {},
+    );
+    expect(result.items).toHaveLength(2);
+    expect(result.items[0].storage_notes).toBeUndefined();
+    expect(result.items[1].storage_notes).toBeUndefined();
+  });
+
+  it('retains storage_notes for staff callers', async () => {
+    const rawItems = [
+      { item_id: 1, title: 'Item 1', storage_notes: 'Cabinet A', item_status: 'active' },
+    ];
+    findItems.mockResolvedValue({ items: rawItems, total: 1, page: 1, pageSize: 20 });
+
+    const result = await listItems({ item_status: 'all' }, {}, { isPublic: false });
+
+    expect(findItems).toHaveBeenCalledWith(
+      pool,
+      expect.objectContaining({ item_status: 'all' }),
+      {},
+    );
+    expect(result.items[0].storage_notes).toBe('Cabinet A');
+  });
+});
+
+// ── archiveItem ───────────────────────────────────────────────────────────────
+
+describe('archiveItem()', () => {
+  let mockConn;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockConn = makeMockConn();
+    pool.getConnection.mockResolvedValue(mockConn);
+  });
+
+  it('successfully soft-archives an item and writes audit log', async () => {
+    findItemById.mockResolvedValueOnce(DB_ITEM);
+
+    await archiveItem(42, { actorId: ACTOR_ID, requestId: 'req-arch', ipAddress: '127.0.0.1' });
+
+    expect(mockConn.beginTransaction).toHaveBeenCalled();
+    expect(findItemById).toHaveBeenCalledWith(mockConn, 42, { forUpdate: true, includeArchived: true });
+    expect(repoArchiveItem).toHaveBeenCalledWith(mockConn, 42);
+    expect(writeAudit).toHaveBeenCalledWith(
+      mockConn,
+      expect.objectContaining({
+        tableName: 'items',
+        recordId: 42,
+        action: 'ARCHIVE',
+        actorId: ACTOR_ID,
+        oldValues: DB_ITEM,
+        newValues: expect.objectContaining({ item_status: 'inactive' }),
+        requestId: 'req-arch',
+        ipAddress: '127.0.0.1',
+      }),
+    );
+    expect(mockConn.commit).toHaveBeenCalled();
+    expect(mockConn.release).toHaveBeenCalled();
+  });
+
+  it('throws NOT_FOUND (404) if item does not exist', async () => {
+    findItemById.mockResolvedValueOnce(null);
+
+    await expect(
+      archiveItem(999, { actorId: ACTOR_ID }),
+    ).rejects.toMatchObject({
+      status: 404,
+      code: 'NOT_FOUND',
+    });
+
+    expect(mockConn.rollback).toHaveBeenCalled();
+    expect(mockConn.release).toHaveBeenCalled();
+  });
+
+  it('throws NOT_FOUND (404) if item is already inactive', async () => {
+    findItemById.mockResolvedValueOnce({ ...DB_ITEM, item_status: 'inactive' });
+
+    await expect(
+      archiveItem(42, { actorId: ACTOR_ID }),
+    ).rejects.toMatchObject({
+      status: 404,
+      code: 'NOT_FOUND',
+    });
+
+    expect(mockConn.rollback).toHaveBeenCalled();
+    expect(mockConn.release).toHaveBeenCalled();
+  });
+
+  it('throws VALIDATION_ERROR (400) for invalid itemId', async () => {
+    await expect(
+      archiveItem('bad-id', { actorId: ACTOR_ID }),
+    ).rejects.toMatchObject({
+      status: 400,
+      code: 'VALIDATION_ERROR',
+    });
+
+    expect(pool.getConnection).not.toHaveBeenCalled();
+  });
+
+  it('throws VALIDATION_ERROR (400) for invalid actorId', async () => {
+    await expect(
+      archiveItem(42, { actorId: null }),
+    ).rejects.toMatchObject({
+      status: 400,
+      code: 'VALIDATION_ERROR',
+    });
+
+    expect(pool.getConnection).not.toHaveBeenCalled();
+  });
+
+  it('rolls back and releases connection when repoArchiveItem fails', async () => {
+    findItemById.mockResolvedValueOnce(DB_ITEM);
+    repoArchiveItem.mockRejectedValueOnce(new Error('DB failure'));
+
+    await expect(
+      archiveItem(42, { actorId: ACTOR_ID }),
+    ).rejects.toThrow('DB failure');
+
+    expect(mockConn.rollback).toHaveBeenCalled();
+    expect(mockConn.release).toHaveBeenCalled();
+  });
+
+  it('rolls back and releases connection when writeAudit fails', async () => {
+    findItemById.mockResolvedValueOnce(DB_ITEM);
+    repoArchiveItem.mockResolvedValueOnce();
+    writeAudit.mockRejectedValueOnce(new Error('Audit failure'));
+
+    await expect(
+      archiveItem(42, { actorId: ACTOR_ID }),
+    ).rejects.toThrow('Audit failure');
+
+    expect(mockConn.rollback).toHaveBeenCalled();
+    expect(mockConn.release).toHaveBeenCalled();
+  });
+});
+
 
 // ── AppError shape ────────────────────────────────────────────────────────────
 

@@ -1,6 +1,8 @@
 import express from 'express';
 import { createSessionMiddleware } from './middleware/session.js';
 import authRoutes from './routes/auth-routes.js';
+import itemRoutes from './routes/item-routes.js';
+import claimRoutes from './routes/claim-routes.js';
 
 export const app = express();
 
@@ -19,6 +21,8 @@ app.use(createSessionMiddleware());
 // ── Routes ───────────────────────────────────────────────────────────────────
 
 app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/items', itemRoutes);
+app.use('/api/v1/claims', claimRoutes);
 
 // ── 404 catch-all ───────────────────────────────────────────────────────────
 

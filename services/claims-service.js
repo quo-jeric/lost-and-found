@@ -1,9 +1,11 @@
 import { pool } from '../config/db.js';
-import { findItemById } from '../repositories/item-repository.js';
+import { findItemById, archiveItem } from '../repositories/item-repository.js';
 import {
   findClaimById,
   findPendingClaimByContact,
   insertClaim,
+  findClaims,
+  updateClaimStatus,
 } from '../repositories/claim-repository.js';
 import { writeAudit } from '../repositories/audit-repository.js';
 import { AppError } from '../utils/app-error.js';
@@ -133,6 +135,21 @@ function validateClaimId(id) {
   return n;
 }
 
+/**
+ * Validate a positive integer actor ID.
+ *
+ * @param {*} actorId
+ * @returns {number} Coerced integer
+ */
+function validateActorId(actorId) {
+  const n = Number(actorId);
+  if (!Number.isInteger(n) || n <= 0) {
+    throw new AppError('A valid actorId is required.', { status: 400, code: 'VALIDATION_ERROR' });
+  }
+  return n;
+}
+
+
 // ─── MySQL error helpers ──────────────────────────────────────────────────────
 
 /**
@@ -233,3 +250,125 @@ export async function getClaimById(claimId) {
   const validatedId = validateClaimId(claimId);
   return findClaimById(pool, validatedId);
 }
+
+/**
+ * List claims with filtering and pagination. Staff-only.
+ *
+ * @param {object} [filters]
+ * @param {object} [pagination]
+ * @param {object} context
+ * @param {number} context.actorId - Staff user ID
+ * @returns {Promise<{ claims: object[], total: number, page: number, pageSize: number }>}
+ */
+export async function listClaims(filters = {}, pagination = {}, context = {}) {
+  validateActorId(context.actorId);
+  return findClaims(pool, filters, pagination);
+}
+
+/**
+ * Review a claim (approve or reject).
+ * Staff role required at route level.
+ *
+ * @param {number|string} claimId
+ * @param {object} payload
+ * @param {'accepted'|'rejected'} payload.status
+ * @param {string} [payload.processingNotes]
+ * @param {object} context
+ * @param {number} context.actorId
+ * @param {string|null} [context.requestId]
+ * @param {string|null} [context.ipAddress]
+ * @returns {Promise<object>} Updated claim record
+ */
+export async function reviewClaim(claimId, payload = {}, context = {}) {
+  const validatedId = validateClaimId(claimId);
+  const validatedActorId = validateActorId(context.actorId);
+  const { requestId = null, ipAddress = null } = context;
+
+  const { status, processingNotes } = payload;
+  if (status !== 'accepted' && status !== 'rejected') {
+    throw new AppError('status must be "accepted" or "rejected".', {
+      status: 400,
+      code: 'VALIDATION_ERROR',
+    });
+  }
+
+  let notes = null;
+  if (processingNotes !== undefined && processingNotes !== null) {
+    notes = String(processingNotes).trim();
+    if (notes.length > 2000) {
+      throw new AppError('processingNotes must be 2000 characters or fewer.', {
+        status: 400,
+        code: 'VALIDATION_ERROR',
+      });
+    }
+  }
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    const existingClaim = await findClaimById(conn, validatedId, { forUpdate: true });
+    if (!existingClaim) {
+      throw new AppError('Claim not found.', { status: 404, code: 'NOT_FOUND' });
+    }
+
+    if (existingClaim.claim_status !== 'pending') {
+      throw new AppError('Only pending claims can be reviewed.', {
+        status: 409,
+        code: 'CLAIM_ALREADY_REVIEWED',
+      });
+    }
+
+    if (status === 'accepted') {
+      const existingItem = await findItemById(conn, existingClaim.item_id, {
+        forUpdate: true,
+        includeArchived: true,
+      });
+
+      if (existingItem) {
+        await archiveItem(conn, existingClaim.item_id);
+
+        await writeAudit(conn, {
+          tableName: 'items',
+          recordId: existingClaim.item_id,
+          action: 'UPDATE',
+          actorId: validatedActorId,
+          oldValues: existingItem,
+          newValues: { ...existingItem, item_status: 'inactive' },
+          requestId,
+          ipAddress,
+        });
+      }
+    }
+
+    const resolvedAt = new Date();
+    await updateClaimStatus(conn, validatedId, {
+      status,
+      processedBy: validatedActorId,
+      processingNotes: notes,
+      resolvedAt,
+    });
+
+    const updatedClaim = await findClaimById(conn, validatedId);
+
+    await writeAudit(conn, {
+      tableName: 'claims',
+      recordId: validatedId,
+      action: 'UPDATE',
+      actorId: validatedActorId,
+      oldValues: existingClaim,
+      newValues: updatedClaim,
+      requestId,
+      ipAddress,
+    });
+
+    await conn.commit();
+    return updatedClaim;
+  } catch (err) {
+    await conn.rollback();
+    throw err;
+  } finally {
+    conn.release();
+  }
+}
+

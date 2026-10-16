@@ -10,12 +10,15 @@ vi.mock('../../config/db.js', () => ({
 
 vi.mock('../../repositories/item-repository.js', () => ({
   findItemById: vi.fn(),
+  archiveItem: vi.fn(),
 }));
 
 vi.mock('../../repositories/claim-repository.js', () => ({
   insertClaim: vi.fn(),
   findClaimById: vi.fn(),
   findPendingClaimByContact: vi.fn(),
+  findClaims: vi.fn(),
+  updateClaimStatus: vi.fn(),
 }));
 
 vi.mock('../../repositories/audit-repository.js', () => ({
@@ -23,13 +26,15 @@ vi.mock('../../repositories/audit-repository.js', () => ({
 }));
 
 // Imports after mocks are wired up
-import { raiseClaim, getClaimById } from '../../services/claims-service.js';
+import { raiseClaim, getClaimById, listClaims, reviewClaim } from '../../services/claims-service.js';
 import { pool } from '../../config/db.js';
-import { findItemById } from '../../repositories/item-repository.js';
+import { findItemById, archiveItem } from '../../repositories/item-repository.js';
 import {
   insertClaim,
   findClaimById,
   findPendingClaimByContact,
+  findClaims,
+  updateClaimStatus,
 } from '../../repositories/claim-repository.js';
 import { writeAudit } from '../../repositories/audit-repository.js';
 import { AppError } from '../../utils/app-error.js';
@@ -475,6 +480,249 @@ describe('getClaimById()', () => {
     expect(pool.getConnection).not.toHaveBeenCalled();
   });
 });
+
+// ── listClaims ────────────────────────────────────────────────────────────────
+
+describe('listClaims()', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('successfully retrieves claims with valid actorId', async () => {
+    const fakeResult = { claims: [DB_CLAIM], total: 1, page: 1, pageSize: 20 };
+    findClaims.mockResolvedValue(fakeResult);
+
+    const result = await listClaims({}, {}, { actorId: 2 });
+    expect(result).toEqual(fakeResult);
+    expect(findClaims).toHaveBeenCalledWith(pool, {}, {});
+  });
+
+  it('throws VALIDATION_ERROR (400) if actorId is missing or invalid', async () => {
+    await expect(listClaims({}, {}, {})).rejects.toMatchObject({
+      status: 400,
+      code: 'VALIDATION_ERROR',
+    });
+
+    await expect(listClaims({}, {}, { actorId: 'abc' })).rejects.toMatchObject({
+      status: 400,
+      code: 'VALIDATION_ERROR',
+    });
+  });
+});
+
+// ── reviewClaim ───────────────────────────────────────────────────────────────
+
+describe('reviewClaim()', () => {
+  let mockConn;
+  const ACTOR_ID = 2;
+  const CONTEXT = { actorId: ACTOR_ID, requestId: 'req-1', ipAddress: '127.0.0.1' };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockConn = makeMockConn();
+    pool.getConnection.mockResolvedValue(mockConn);
+  });
+
+  it('successfully approves a pending claim, deactivates item, and writes audits', async () => {
+    const pendingClaim = { ...DB_CLAIM, claim_status: 'pending' };
+    const acceptedClaim = {
+      ...DB_CLAIM,
+      claim_status: 'accepted',
+      processed_by: ACTOR_ID,
+      processing_notes: 'Verified ID',
+    };
+    const activeItem = { item_id: 42, item_status: 'active' };
+
+    findClaimById
+      .mockResolvedValueOnce(pendingClaim)
+      .mockResolvedValueOnce(acceptedClaim);
+    findItemById.mockResolvedValueOnce(activeItem);
+
+    const result = await reviewClaim(
+      CLAIM_ID,
+      { status: 'accepted', processingNotes: 'Verified ID' },
+      CONTEXT,
+    );
+
+    expect(result).toEqual(acceptedClaim);
+    expect(mockConn.beginTransaction).toHaveBeenCalled();
+    expect(archiveItem).toHaveBeenCalledWith(mockConn, 42);
+    expect(updateClaimStatus).toHaveBeenCalledWith(
+      mockConn,
+      CLAIM_ID,
+      expect.objectContaining({
+        status: 'accepted',
+        processedBy: ACTOR_ID,
+        processingNotes: 'Verified ID',
+      }),
+    );
+    // Audit for item update and claim update
+    expect(writeAudit).toHaveBeenCalledTimes(2);
+    expect(writeAudit).toHaveBeenNthCalledWith(
+      1,
+      mockConn,
+      expect.objectContaining({
+        tableName: 'items',
+        recordId: 42,
+        action: 'UPDATE',
+        actorId: ACTOR_ID,
+      }),
+    );
+    expect(writeAudit).toHaveBeenNthCalledWith(
+      2,
+      mockConn,
+      expect.objectContaining({
+        tableName: 'claims',
+        recordId: CLAIM_ID,
+        action: 'UPDATE',
+        actorId: ACTOR_ID,
+      }),
+    );
+    expect(mockConn.commit).toHaveBeenCalled();
+    expect(mockConn.release).toHaveBeenCalled();
+  });
+
+  it('successfully rejects a pending claim without touching the item', async () => {
+    const pendingClaim = { ...DB_CLAIM, claim_status: 'pending' };
+    const rejectedClaim = {
+      ...DB_CLAIM,
+      claim_status: 'rejected',
+      processed_by: ACTOR_ID,
+      processing_notes: 'Insufficient proof',
+    };
+
+    findClaimById
+      .mockResolvedValueOnce(pendingClaim)
+      .mockResolvedValueOnce(rejectedClaim);
+
+    const result = await reviewClaim(
+      CLAIM_ID,
+      { status: 'rejected', processingNotes: 'Insufficient proof' },
+      CONTEXT,
+    );
+
+    expect(result).toEqual(rejectedClaim);
+    expect(archiveItem).not.toHaveBeenCalled();
+    expect(writeAudit).toHaveBeenCalledTimes(1);
+    expect(writeAudit).toHaveBeenCalledWith(
+      mockConn,
+      expect.objectContaining({
+        tableName: 'claims',
+        recordId: CLAIM_ID,
+        action: 'UPDATE',
+        actorId: ACTOR_ID,
+      }),
+    );
+    expect(mockConn.commit).toHaveBeenCalled();
+    expect(mockConn.release).toHaveBeenCalled();
+  });
+
+  it('throws CLAIM_ALREADY_REVIEWED (409) if claim is already accepted', async () => {
+    findClaimById.mockResolvedValueOnce({ ...DB_CLAIM, claim_status: 'accepted' });
+
+    await expect(
+      reviewClaim(CLAIM_ID, { status: 'accepted' }, CONTEXT),
+    ).rejects.toMatchObject({
+      status: 409,
+      code: 'CLAIM_ALREADY_REVIEWED',
+    });
+    expect(mockConn.rollback).toHaveBeenCalled();
+    expect(mockConn.release).toHaveBeenCalled();
+  });
+
+  it('throws CLAIM_ALREADY_REVIEWED (409) if claim is already rejected', async () => {
+    findClaimById.mockResolvedValueOnce({ ...DB_CLAIM, claim_status: 'rejected' });
+
+    await expect(
+      reviewClaim(CLAIM_ID, { status: 'rejected' }, CONTEXT),
+    ).rejects.toMatchObject({
+      status: 409,
+      code: 'CLAIM_ALREADY_REVIEWED',
+    });
+    expect(mockConn.rollback).toHaveBeenCalled();
+    expect(mockConn.release).toHaveBeenCalled();
+  });
+
+  it('throws NOT_FOUND (404) if claim does not exist', async () => {
+    findClaimById.mockResolvedValueOnce(null);
+
+    await expect(
+      reviewClaim(CLAIM_ID, { status: 'accepted' }, CONTEXT),
+    ).rejects.toMatchObject({
+      status: 404,
+      code: 'NOT_FOUND',
+    });
+    expect(mockConn.rollback).toHaveBeenCalled();
+    expect(mockConn.release).toHaveBeenCalled();
+  });
+
+  it('throws VALIDATION_ERROR (400) if status is invalid', async () => {
+    await expect(
+      reviewClaim(CLAIM_ID, { status: 'invalid_status' }, CONTEXT),
+    ).rejects.toMatchObject({
+      status: 400,
+      code: 'VALIDATION_ERROR',
+    });
+    expect(pool.getConnection).not.toHaveBeenCalled();
+  });
+
+  it('throws VALIDATION_ERROR (400) if claimId is invalid', async () => {
+    await expect(
+      reviewClaim('not-a-number', { status: 'accepted' }, CONTEXT),
+    ).rejects.toMatchObject({
+      status: 400,
+      code: 'VALIDATION_ERROR',
+    });
+    expect(pool.getConnection).not.toHaveBeenCalled();
+  });
+
+  it('throws VALIDATION_ERROR (400) if actorId is invalid', async () => {
+    await expect(
+      reviewClaim(CLAIM_ID, { status: 'accepted' }, { actorId: null }),
+    ).rejects.toMatchObject({
+      status: 400,
+      code: 'VALIDATION_ERROR',
+    });
+    expect(pool.getConnection).not.toHaveBeenCalled();
+  });
+
+  it('throws VALIDATION_ERROR (400) if processingNotes exceed 2000 characters', async () => {
+    const longNotes = 'a'.repeat(2001);
+    await expect(
+      reviewClaim(CLAIM_ID, { status: 'accepted', processingNotes: longNotes }, CONTEXT),
+    ).rejects.toMatchObject({
+      status: 400,
+      code: 'VALIDATION_ERROR',
+    });
+    expect(pool.getConnection).not.toHaveBeenCalled();
+  });
+
+  it('rolls back and releases connection when updateClaimStatus fails', async () => {
+    findClaimById.mockResolvedValueOnce({ ...DB_CLAIM, claim_status: 'pending' });
+    updateClaimStatus.mockRejectedValueOnce(new Error('DB failure'));
+
+    await expect(
+      reviewClaim(CLAIM_ID, { status: 'rejected' }, CONTEXT),
+    ).rejects.toThrow('DB failure');
+
+    expect(mockConn.rollback).toHaveBeenCalled();
+    expect(mockConn.release).toHaveBeenCalled();
+  });
+
+  it('rolls back and releases connection when writeAudit fails', async () => {
+    findClaimById
+      .mockResolvedValueOnce({ ...DB_CLAIM, claim_status: 'pending' })
+      .mockResolvedValueOnce({ ...DB_CLAIM, claim_status: 'rejected' });
+    updateClaimStatus.mockResolvedValueOnce();
+    writeAudit.mockRejectedValueOnce(new Error('Audit failure'));
+
+    await expect(
+      reviewClaim(CLAIM_ID, { status: 'rejected' }, CONTEXT),
+    ).rejects.toThrow('Audit failure');
+
+    expect(mockConn.rollback).toHaveBeenCalled();
+    expect(mockConn.release).toHaveBeenCalled();
+  });
+});
+
 
 // ── AppError structural check ─────────────────────────────────────────────────
 
