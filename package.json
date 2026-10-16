@@ -5,7 +5,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "start": "node server.js",
+    "db:migrate": "node scripts/migrate.js",
+    "check:no-delete": "! grep -rniE '(DELETE[[:space:]]+FROM|REPLACE[[:space:]]+INTO|TRUNCATE)' repositories services controllers routes middleware"
   },
   "keywords": [],
   "author": "",
