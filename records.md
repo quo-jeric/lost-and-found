@@ -527,8 +527,82 @@ All migrations are tracked in `schema_migrations` with SHA-256 checksums. Applie
   - Retained `views/partials/head.ejs` (used by all views).
   - Retained `specs/database-schema-plan.md` and `specs/global-spec.md` for project architecture reference.
 - **Testing & Verification**:
+### Milestone 19: In-Person Physical Claim Verification & Custody Release Flow
+- **Staff Console Claim Action Button (`views/dashboard.ejs`)**:
+  - Added dedicated **"Claim"** action button in the Item Inventory ledger for active assets.
+  - Clicking launches the interactive **In-Person Claim & Credential Verification Modal**.
+- **In-Person Credential Verification Dialog (`views/dashboard.ejs`)**:
+  - Implemented `<dialog id="in-person-claim-dialog">` providing guards with a structured checklist for face-to-face claim releases.
+  - Fields include: Claimant Full Name, Contact Details (Phone/Email), Presented Credential Type (CSPC Student ID, Employee ID, PhilSys, Driver's License, Device passcode/lockscreen match), Credential Reference Number, and Officer Verification Notes.
+- **Client-Side Workflow Orchestration (`public/js/app.js`)**:
+  - Added `openInPersonClaimModal(item)`, `closeInPersonClaimModal()`, and `handleIdTypeChange(type)` for dynamic placeholder guidance.
+  - Added `submitInPersonClaim(event)`:
+    1. Transacts a new claim registration with formatted credential verification notes.
+    2. Immediately triggers verification approval via `PATCH /api/v1/claims/:id/review` with `status: 'accepted'`.
+    3. Re-routes item status to `inactive` (claimed) with immutable audit snapshot.
+  - Corrected claim review endpoint path to `/api/v1/claims/:id/review` in `submitClaimDecision`.
+- **Backend Controller Enhancement (`controllers/claim-controller.js`)**:
+  - Handled flexible payload naming (`processingNotes` and alias `notes`) in `reviewClaimHandler`.
+- **Testing & Integrity**:
   - All 143 unit tests passing (`npm test`).
-  - Zero-delete check passing (`npm run check:no-delete`).
+  - Zero physical delete check verified (`npm run check:no-delete`).
+
+### Milestone 20: In-Form Photo Upload Integration & Optional Serial Number Support
+- **Photo Upload Component Relocation (`views/admin/add-item.ejs` & `public/css/style.css`)**:
+  - Eliminated the awkward floating photo upload card on top/side grid (`.admin-summary-grid`).
+  - Replaced top Card 2 with a balanced "Items in Safe Custody" metric card linking directly to `/dashboard?tab=items`.
+  - Moved the photo dropzone directly inside the "Item Information" form panel (`admin-form-panel`), positioned naturally above the form action footer.
+  - Implemented intuitive drag-and-drop file upload, file size validation (max 5MB), and an inline preview card showing the thumbnail, filename, ready-status badge, and quick remove action.
+  - Defined `.visually-hidden` and added explicit `style="display: none;"` on the hidden `<input type="file">` to suppress duplicate browser-native "Choose file" buttons.
+  - Set Item Photograph as strictly **Required** matching standard field typography (`Item Photograph *`), with red dropzone border highlight on empty submission, and validation enforcement in both `add-item.ejs` and `public/js/app.js`.
+- **Optional Serial Number / Unique Tag Support**:
+  - Added optional `serial_number` text input field in `views/admin/add-item.ejs` (paired with Found Date).
+  - Added optional `serial_number` input field in `#log-item-dialog` and `#edit-item-dialog` in `views/dashboard.ejs`.
+  - Updated inventory table in `views/dashboard.ejs` to display an inline `SN: <serial_number>` mono tag when present.
+  - Updated `handlePostFoundItem` in `views/admin/add-item.ejs` and `submitNewItem` / `openEditItemModal` / `submitEditItem` in `public/js/app.js` to process and persist `serial_number`.
+- **Testing & Verification**:
+  - All 143 unit tests passing (`npm test`).
+  - Zero physical delete check passed (`npm run check:no-delete`).
+
+### Milestone 21: Institutional Brand Assets Architecture & CSPC Logo Integration
+- **Asset Directory Structure**:
+  - Standardized static brand assets under `public/images/` (`public/images/CSPCLogo.jpeg` and `public/images/cspc-logo.jpeg`).
+  - Separated institutional assets from user/item custody uploads (`public/uploads/items/`).
+- **Dashboard & App-Wide Branding Integration**:
+  - Integrated the official `CSPCLogo.jpeg` into the Dashboard sidebar branding ([`views/dashboard.ejs`](file:///media/nyaaxie/STORAGE/Documents/My%20Files%20-%20Brizuela/My%20Projects/lost_and_found/lost-and-found/views/dashboard.ejs)) and Admin Add Item console ([`views/admin/add-item.ejs`](file:///media/nyaaxie/STORAGE/Documents/My%20Files%20-%20Brizuela/My%20Projects/lost_and_found/lost-and-found/views/admin/add-item.ejs)).
+  - Also connected to the Public Catalog sidebar ([`views/index.ejs`](file:///media/nyaaxie/STORAGE/Documents/My%20Files%20-%20Brizuela/My%20Projects/lost_and_found/lost-and-found/views/index.ejs)) and Staff Login portal ([`views/login.ejs`](file:///media/nyaaxie/STORAGE/Documents/My%20Files%20-%20Brizuela/My%20Projects/lost_and_found/lost-and-found/views/login.ejs)).
+  - Added `.brand-crest-img` CSS with `object-fit: cover` and resilient fallback to shield SVG on error.
+- **Testing & Verification**:
+  - All 143 unit tests passing (`npm test`).
+  - Zero physical delete check passed (`npm run check:no-delete`).
+
+### Milestone 22: Modern Enterprise UI Redesign for Inventory Filtering, Claims Queue & "Inspect & View" Dossier Modal
+- **Inventory Filter Toolbar Redesign** ([`views/dashboard.ejs`](file:///media/nyaaxie/STORAGE/Documents/My%20Files%20-%20Brizuela/My%20Projects/lost_and_found/lost-and-found/views/dashboard.ejs)):
+  - Replaced legacy text filter with a comprehensive `.table-actions-cluster` toolbar.
+  - Added modern search field with embedded search icon (`#staff-item-search`), custom category dropdown (`#staff-item-category-filter`), custody status dropdown (`#staff-item-status-filter`), one-click filter reset button (`.btn-reset-filters`), and quick "Log Item" primary action.
+  - Implemented multi-attribute client-side filtering (`runStaffInventoryFilter()` and `resetStaffInventoryFilters()` in [`public/js/app.js`](file:///media/nyaaxie/STORAGE/Documents/My%20Files%20-%20Brizuela/My%20Projects/lost_and_found/lost-and-found/public/js/app.js)) matching title, serial number, category, finder name, and storage status with dynamic item counter updates.
+- **Claims Verification Queue & "Pending Verification" Pill Styling**:
+  - Replaced plain select dropdown with fast interactive status pill selectors (`All`, `Pending`, `Approved`, `Rejected`) with dynamic badge counters.
+  - Designed modern status badge pills:
+    - `.pending-verification`: Amber badge with glowing/pulsing animation dot (`.pulse-dot-amber`).
+    - `.accepted-claim`: Green badge with checkmark icon for approved/released claims.
+    - `.rejected-claim`: Rose badge with dismiss icon for rejected claims.
+  - Added dedicated claimant search filter (`#staff-claim-search`) in claims toolbar.
+- **"Inspect & View" Action & Dossier Modal (`#review-claim-dialog`)**:
+  - Redesigned table action button to **"Inspect & View"** (`.btn-inspect-view`) with an eye icon.
+  - Completely redesigned `#review-claim-dialog` with high-hierarchy card layout:
+    - Modal header with crest icon, claim reference tag (`#CLM-XXXX`), and live status badge.
+    - Target Inventory Property banner displaying asset reference ID, title, and filing date.
+    - 4-card Claimant Credentials grid (Full Name, Contact Phone, Email Address, Custody Status).
+    - Amber-accented "Proof of Ownership" card displaying private markings and secret verification evidence.
+    - Officer verification notes textarea and actionable Approve & Release / Reject buttons that automatically toggle based on claim review state.
+- **Modal Dialog Display Fixes**:
+  - Resolved issue where `<dialog class="custom-dialog">` was displayed in normal document flow at the bottom of the page even when closed, caused by an unconditional `display: flex;` rule overriding native `dialog:not([open])`.
+  - Added explicit `dialog.custom-dialog:not([open]) { display: none !important; }` and scoped flex layout to `dialog.custom-dialog[open]`.
+  - Removed outdated `notesEl` DOM reference to prevent runtime `ReferenceError` during Inspect & View modal interactions.
+- **Testing & Verification**:
+  - All 143 unit tests passing (`npm test`).
+  - Zero physical delete check verified (`npm run check:no-delete`).
 
 ---
 

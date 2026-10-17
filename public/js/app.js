@@ -364,15 +364,32 @@ function showToast(message, type = 'info') {
   const container = document.getElementById('toast-container');
   if (!container) return;
 
+  const icons = {
+    success: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>`,
+    error:   `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`,
+    info:    `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>`,
+  };
+  const titles = { success: 'Success', error: 'Error', info: 'Notice' };
+
   const toast = document.createElement('div');
   toast.className = `toast toast-${type}`;
-  toast.textContent = message;
+  toast.innerHTML = `
+    <div class="toast-icon-wrap">${icons[type] || icons.info}</div>
+    <div class="toast-content">
+      <div class="toast-title">${titles[type] || 'Notice'}</div>
+      <div class="toast-message">${message}</div>
+    </div>
+    <button class="toast-close-btn" onclick="this.closest('.toast').remove()" aria-label="Dismiss">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+    </button>
+  `;
   container.appendChild(toast);
 
   setTimeout(() => {
     toast.style.opacity = '0';
-    setTimeout(() => toast.remove(), 250);
-  }, 4000);
+    toast.style.transform = 'translateY(6px)';
+    setTimeout(() => toast.remove(), 280);
+  }, 5000);
 }
 
 function escapeHtml(str) {
@@ -448,30 +465,130 @@ function switchDashboardTab(tabName) {
 
 // ── 8. Table Search & Filtering ─────────────────────────────────────────────
 function filterStaffInventory(query) {
-  const q = (query || '').toLowerCase().trim();
+  const searchInput = document.getElementById('staff-item-search');
+  if (searchInput && query !== undefined && searchInput.value !== query) {
+    searchInput.value = query;
+  }
+  runStaffInventoryFilter();
+}
+
+function runStaffInventoryFilter() {
+  const query = (document.getElementById('staff-item-search')?.value || '').toLowerCase().trim();
+  const category = (document.getElementById('staff-item-category-filter')?.value || 'all').toLowerCase().trim();
+  const status = (document.getElementById('staff-item-status-filter')?.value || 'all').toLowerCase().trim();
+
   const rows = document.querySelectorAll('#staff-items-table tbody tr');
+  let matchCount = 0;
+
   rows.forEach((row) => {
+    if (!row.getAttribute('data-id')) return;
+
+    const id = row.getAttribute('data-id') || '';
     const title = row.getAttribute('data-title') || '';
     const cat = row.getAttribute('data-category') || '';
+    const rowStatus = row.getAttribute('data-status') || '';
+    const serial = row.getAttribute('data-serial') || '';
+    const finder = row.getAttribute('data-finder') || '';
     const text = row.innerText.toLowerCase();
-    if (!q || title.includes(q) || cat.includes(q) || text.includes(q)) {
+
+    const matchesQuery = !query || 
+      title.includes(query) || 
+      cat.includes(query) || 
+      serial.includes(query) || 
+      finder.includes(query) || 
+      id.includes(query) || 
+      text.includes(query);
+
+    const matchesCategory = category === 'all' || cat === category;
+    const matchesStatus = status === 'all' || rowStatus === status;
+
+    if (matchesQuery && matchesCategory && matchesStatus) {
       row.style.display = '';
+      matchCount++;
     } else {
       row.style.display = 'none';
     }
   });
+
+  const counterEl = document.getElementById('inventory-results-counter');
+  if (counterEl) {
+    counterEl.textContent = `Showing ${matchCount} items`;
+  }
+}
+
+function resetStaffInventoryFilters() {
+  const searchInput = document.getElementById('staff-item-search');
+  const catFilter = document.getElementById('staff-item-category-filter');
+  const statusFilter = document.getElementById('staff-item-status-filter');
+
+  if (searchInput) searchInput.value = '';
+  if (catFilter) catFilter.value = 'all';
+  if (statusFilter) statusFilter.value = 'all';
+
+  runStaffInventoryFilter();
+}
+
+let currentClaimFilterStatus = 'all';
+
+function setClaimFilter(status, btnEl) {
+  currentClaimFilterStatus = status;
+  const pillBtns = document.querySelectorAll('.filter-pill-selector .filter-pill-btn');
+  pillBtns.forEach((btn) => btn.classList.remove('active'));
+  if (btnEl) btnEl.classList.add('active');
+  filterStaffClaims();
 }
 
 function filterClaimsByStatus(status) {
+  const targetBtn = document.querySelector(`.filter-pill-btn[data-filter="${status}"]`);
+  setClaimFilter(status, targetBtn);
+}
+
+function filterStaffClaims() {
+  const query = (document.getElementById('staff-claim-search')?.value || '').toLowerCase().trim();
+  const status = currentClaimFilterStatus;
+
   const rows = document.querySelectorAll('#staff-claims-table tbody tr');
+  let matchCount = 0;
+
   rows.forEach((row) => {
-    const rowStatus = row.getAttribute('data-status');
-    if (status === 'all' || rowStatus === status) {
+    if (!row.getAttribute('data-id')) return;
+
+    const rowStatus = row.getAttribute('data-status') || '';
+    const claimant = row.getAttribute('data-claimant') || '';
+    const item = row.getAttribute('data-item') || '';
+    const ref = row.getAttribute('data-ref') || '';
+    const clm = row.getAttribute('data-clm') || '';
+    const text = row.innerText.toLowerCase();
+
+    const matchesQuery = !query ||
+      claimant.includes(query) ||
+      item.includes(query) ||
+      ref.includes(query) ||
+      clm.includes(query) ||
+      text.includes(query);
+
+    const matchesStatus = status === 'all' || rowStatus === status;
+
+    if (matchesQuery && matchesStatus) {
       row.style.display = '';
+      matchCount++;
     } else {
       row.style.display = 'none';
     }
   });
+
+  const counterEl = document.getElementById('claims-results-counter');
+  if (counterEl) {
+    if (status === 'all') {
+      counterEl.textContent = `Showing ${matchCount} claims`;
+    } else if (status === 'pending') {
+      counterEl.textContent = `${matchCount} Pending Verification`;
+    } else if (status === 'accepted') {
+      counterEl.textContent = `${matchCount} Approved`;
+    } else if (status === 'rejected') {
+      counterEl.textContent = `${matchCount} Rejected`;
+    }
+  }
 }
 
 function filterStaffAuditLogs(query) {
@@ -509,9 +626,16 @@ async function submitNewItem(e) {
 
   try {
     let imageUrl = form.image_url ? form.image_url.value.trim() || null : null;
+    const hasImageFile = form.image_file && form.image_file.files && form.image_file.files[0];
+
+    if (!imageUrl && !hasImageFile) {
+      showToast('Please upload a photograph or provide an image URL. Item photo is required.', 'error');
+      if (submitBtn) submitBtn.disabled = false;
+      return;
+    }
 
     // Check if user selected an image file
-    if (form.image_file && form.image_file.files && form.image_file.files[0]) {
+    if (hasImageFile) {
       if (btnText) btnText.textContent = 'Uploading photo...';
       const imgFormData = new FormData();
       imgFormData.append('image', form.image_file.files[0]);
@@ -538,6 +662,7 @@ async function submitNewItem(e) {
       finder_name: form.finder_name.value.trim(),
       finder_contact: form.finder_contact ? form.finder_contact.value.trim() : null,
       description: form.description ? form.description.value.trim() : null,
+      serial_number: form.serial_number ? form.serial_number.value.trim() || null : null,
       storage_notes: form.storage_notes ? form.storage_notes.value.trim() : null,
       image_url: imageUrl,
     };
@@ -576,6 +701,7 @@ function openEditItemModal(item) {
   const locField = document.getElementById('edit-item-location');
   const statusField = document.getElementById('edit-item-status');
   const descField = document.getElementById('edit-item-desc');
+  const serialField = document.getElementById('edit-item-serial-number');
   const storageField = document.getElementById('edit-item-storage-notes');
 
   if (idField) idField.value = item.item_id;
@@ -584,6 +710,7 @@ function openEditItemModal(item) {
   if (locField) locField.value = item.location_id || '';
   if (statusField) statusField.value = item.item_status || 'stored';
   if (descField) descField.value = item.description || '';
+  if (serialField) serialField.value = item.serial_number || '';
   if (storageField) storageField.value = item.storage_notes || '';
 
   dialog.showModal();
@@ -607,6 +734,7 @@ async function submitEditItem(e) {
     location_id: form.location_id.value ? Number(form.location_id.value) : null,
     item_status: form.item_status.value,
     description: form.description ? form.description.value.trim() : null,
+    serial_number: form.serial_number ? form.serial_number.value.trim() || null : null,
     storage_notes: form.storage_notes ? form.storage_notes.value.trim() : null,
   };
 
@@ -654,21 +782,89 @@ function openReviewClaimModal(claim) {
   const dialog = document.getElementById('review-claim-dialog');
   if (!dialog) return;
 
+  const claimIdEl = document.getElementById('modal-review-claim-id');
+  const itemCodeEl = document.getElementById('modal-claim-item-code');
   const titleEl = document.getElementById('modal-claim-item-title');
+  const dateEl = document.getElementById('modal-claim-date');
   const nameEl = document.getElementById('modal-claim-claimant-name');
   const emailEl = document.getElementById('modal-claim-email');
   const phoneEl = document.getElementById('modal-claim-phone');
+  const custodyEl = document.getElementById('modal-claim-custody-text');
   const proofEl = document.getElementById('modal-claim-proof');
+  const statusBadgeContainer = document.getElementById('modal-review-claim-status-badge');
   const statusEl = document.getElementById('modal-review-claim-status');
-  const notesEl = document.getElementById('review-claim-notes');
 
+  const approveBtn = document.getElementById('btn-approve-claim');
+  const rejectBtn = document.getElementById('btn-reject-claim');
+
+  if (claimIdEl) claimIdEl.textContent = `#CLM-${String(claim.claim_id).padStart(4, '0')}`;
+  if (itemCodeEl) itemCodeEl.textContent = `REF: #FI-${String(claim.item_id).padStart(4, '0')}`;
   if (titleEl) titleEl.textContent = claim.item_title || `Item #${claim.item_id}`;
   if (nameEl) nameEl.textContent = claim.claimant_name;
-  if (emailEl) emailEl.textContent = claim.claimant_email || 'None';
-  if (phoneEl) phoneEl.textContent = claim.claimant_phone || 'None';
+  if (emailEl) emailEl.textContent = claim.claimant_email || 'Not provided';
+  if (phoneEl) phoneEl.textContent = claim.claimant_phone || 'Not provided';
   if (proofEl) proofEl.textContent = claim.proof_description || 'No detailed proof submitted.';
-  if (statusEl) statusEl.textContent = (claim.claim_status || 'Pending').toUpperCase();
-  if (notesEl) notesEl.value = '';
+
+  if (dateEl && claim.created_at) {
+    try {
+      dateEl.textContent = new Date(claim.created_at).toLocaleDateString('en-US', {
+        day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+      });
+    } catch {
+      dateEl.textContent = claim.created_at;
+    }
+  }
+
+  const claimStatus = (claim.claim_status || 'pending').toLowerCase();
+  if (statusBadgeContainer) {
+    if (claimStatus === 'pending') {
+      statusBadgeContainer.innerHTML = `
+        <span class="status-pill-subtle pending-verification" id="modal-review-claim-status">
+          <span class="pulse-dot-amber"></span>
+          <span>Pending Verification</span>
+        </span>
+      `;
+    } else if (claimStatus === 'accepted') {
+      statusBadgeContainer.innerHTML = `
+        <span class="status-pill-subtle accepted-claim" id="modal-review-claim-status">
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          <span>Approved</span>
+        </span>
+      `;
+    } else if (claimStatus === 'rejected') {
+      statusBadgeContainer.innerHTML = `
+        <span class="status-pill-subtle rejected-claim" id="modal-review-claim-status">
+          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          <span>Rejected</span>
+        </span>
+      `;
+    } else if (statusEl) {
+      statusEl.textContent = claimStatus.toUpperCase();
+    }
+  } else if (statusEl) {
+    statusEl.textContent = claimStatus.toUpperCase();
+  }
+
+  if (custodyEl) {
+    if (claimStatus === 'pending') {
+      custodyEl.textContent = 'Pending Verification';
+      custodyEl.style.color = '#B45309';
+    } else if (claimStatus === 'accepted') {
+      custodyEl.textContent = 'Approved & Released';
+      custodyEl.style.color = '#15803D';
+    } else if (claimStatus === 'rejected') {
+      custodyEl.textContent = 'Claim Rejected';
+      custodyEl.style.color = '#B91C1C';
+    } else {
+      custodyEl.textContent = claimStatus;
+      custodyEl.style.color = '#0F172A';
+    }
+  }
+
+  // Toggle action buttons based on pending status
+  const isPending = claimStatus === 'pending';
+  if (approveBtn) approveBtn.style.display = isPending ? 'inline-flex' : 'none';
+  if (rejectBtn) rejectBtn.style.display = isPending ? 'inline-flex' : 'none';
 
   dialog.showModal();
 }
@@ -682,7 +878,7 @@ function closeReviewClaimModal() {
 async function submitClaimDecision(decision) {
   if (!activeReviewClaim) return;
 
-  const notes = document.getElementById('review-claim-notes').value.trim();
+  const notes = '';
   const approveBtn = document.getElementById('btn-approve-claim');
   const rejectBtn = document.getElementById('btn-reject-claim');
 
@@ -690,7 +886,7 @@ async function submitClaimDecision(decision) {
   if (rejectBtn) rejectBtn.disabled = true;
 
   try {
-    const res = await fetch(`/api/v1/claims/${activeReviewClaim.claim_id}`, {
+    const res = await fetch(`/api/v1/claims/${activeReviewClaim.claim_id}/review`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -710,6 +906,127 @@ async function submitClaimDecision(decision) {
   } finally {
     if (approveBtn) approveBtn.disabled = false;
     if (rejectBtn) rejectBtn.disabled = false;
+  }
+}
+
+// ── 11. In-Person Claim & Credential Verification Handler ───────────────────
+let activeInPersonItem = null;
+
+function openInPersonClaimModal(item) {
+  activeInPersonItem = item;
+  const dialog = document.getElementById('in-person-claim-dialog');
+  if (!dialog) return;
+
+  const idInput = document.getElementById('in-person-item-id');
+  const summaryEl = document.getElementById('in-person-item-summary');
+  const refEl = document.getElementById('in-person-item-ref');
+  const form = document.getElementById('in-person-claim-form');
+
+  if (form) form.reset();
+  if (idInput) idInput.value = item.item_id;
+  if (summaryEl) summaryEl.textContent = item.title;
+  if (refEl) refEl.textContent = `Asset Code: #FI-${String(item.item_id).padStart(4, '0')} · Found: ${item.location_name || 'Campus'}`;
+
+  // Pre-fill notes template
+  const proofText = document.getElementById('in-person-verification-proof');
+  if (proofText) {
+    proofText.value = `Claimant personally presented credentials at Security Desk. Details verified against asset description. Released by Officer on duty.`;
+  }
+
+  dialog.showModal();
+}
+
+function closeInPersonClaimModal() {
+  const dialog = document.getElementById('in-person-claim-dialog');
+  if (dialog) dialog.close();
+  activeInPersonItem = null;
+}
+
+function handleIdTypeChange(type) {
+  const numInput = document.getElementById('in-person-id-number');
+  if (!numInput) return;
+  if (type === 'Device Match & Verification') {
+    numInput.placeholder = 'e.g. Passcode / Lockscreen Photo / Face ID matched in presence of guard';
+  } else if (type === 'CSPC Student ID') {
+    numInput.placeholder = 'e.g. Student ID #2023-10492';
+  } else {
+    numInput.placeholder = 'e.g. ID card / license / credential reference number';
+  }
+}
+
+async function submitInPersonClaim(e) {
+  e.preventDefault();
+  if (!activeInPersonItem) return;
+
+  const submitBtn = document.getElementById('btn-submit-in-person-claim');
+  const btnText = submitBtn ? submitBtn.querySelector('.btn-text') : null;
+  if (submitBtn) submitBtn.disabled = true;
+  if (btnText) btnText.textContent = 'Processing Release...';
+
+  const itemId = Number(document.getElementById('in-person-item-id').value);
+  const claimantName = document.getElementById('in-person-claimant-name').value.trim();
+  const contact = document.getElementById('in-person-claimant-contact').value.trim();
+  const idType = document.getElementById('in-person-id-type').value;
+  const idNumber = document.getElementById('in-person-id-number').value.trim();
+  const verificationProof = document.getElementById('in-person-verification-proof').value.trim();
+
+  const isEmail = contact.includes('@');
+  const claimantEmail = isEmail ? contact : null;
+  const claimantPhone = !isEmail ? contact : null;
+
+  const proofDescription = `[In-Person Credential Verification]
+ID Type: ${idType}
+ID/Ref Number: ${idNumber}
+Officer Notes: ${verificationProof}`;
+
+  try {
+    // 1. Submit claim record for this item
+    const claimRes = await fetch('/api/v1/claims', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        item_id: itemId,
+        claimant_name: claimantName,
+        claimant_email: claimantEmail,
+        claimant_phone: claimantPhone,
+        proof_description: proofDescription,
+      }),
+    });
+
+    const claimJson = await claimRes.json();
+    if (!claimRes.ok) {
+      throw new Error(claimJson.error?.message || claimJson.message || 'Failed to register claim');
+    }
+
+    const createdClaim = claimJson.data;
+
+    // 2. Immediately approve the claim (since claimant is physically verified by guard)
+    const reviewRes = await fetch(`/api/v1/claims/${createdClaim.claim_id}/review`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        status: 'accepted',
+        notes: `In-person verification approved: ${idType} (${idNumber}). Item handed over to claimant ${claimantName}.`,
+      }),
+    });
+
+    const reviewJson = await reviewRes.json();
+    if (!reviewRes.ok) {
+      throw new Error(reviewJson.error?.message || reviewJson.message || 'Failed to approve claim');
+    }
+
+    showToast(`Success! Item #${itemId} claimed and custody released to ${claimantName}.`, 'success');
+    closeInPersonClaimModal();
+    setTimeout(() => {
+      window.location.href = '/dashboard?tab=items';
+    }, 700);
+  } catch (err) {
+    showToast(err.message, 'error');
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      if (btnText) btnText.textContent = 'Verify Credential & Release Item';
+    }
   }
 }
 

@@ -6,7 +6,8 @@
     <div class="sidebar-top-branding">
       <a href="/" class="brand-link" title="Return to Public Catalog">
         <div class="brand-crest-box">
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2">
+          <img src="/images/CSPCLogo.jpeg" alt="CSPC Logo" class="brand-crest-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+          <svg style="display: none;" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2">
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
             <path d="M9 12l2 2 4-4"></path>
           </svg>
@@ -136,7 +137,7 @@
         </div>
       </section>
 
-      <!-- Row 1: Two Summary Cards (Active Claims & Upload Dropzone) -->
+      <!-- Row 1: Two Summary Cards (Active Claims & Inventory Overview) -->
       <section class="admin-summary-grid">
         <!-- Card 1: Active Claims -->
         <div class="summary-stat-card">
@@ -160,32 +161,25 @@
           </div>
         </div>
 
-        <!-- Card 2: Photo Upload Area -->
-        <div class="summary-upload-card" id="dropzone-upload-box">
-          <div class="upload-dropzone-inner">
-            <div class="upload-icon-frame">
-              <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#2563EB" stroke-width="2">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                <polyline points="21 15 16 10 5 21"></polyline>
-              </svg>
-            </div>
-            <div class="upload-cta-wrap">
-              <input type="file" id="item-image-file" accept="image/png, image/jpeg, image/webp" class="visually-hidden" onchange="handleImageFileSelect(this)">
-              <button type="button" class="btn-blue-upload" onclick="document.getElementById('item-image-file').click()">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                  <polyline points="17 8 12 3 7 8"></polyline>
-                  <line x1="12" y1="3" x2="12" y2="15"></line>
-                </svg>
-                <span>UPLOAD PHOTO</span>
-              </button>
-              <span class="upload-hint-text">JPG or PNG &bull; Max 5 MB &bull; Optional</span>
-            </div>
+        <!-- Card 2: Safe Custody Inventory -->
+        <div class="summary-stat-card">
+          <div class="stat-icon-wrap emerald">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#059669" stroke-width="2">
+              <rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect>
+              <rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect>
+            </svg>
           </div>
-          <div id="upload-preview-container" class="upload-preview-container hidden">
-            <img id="upload-preview-img" src="" alt="Selected item preview" class="preview-thumb">
-            <button type="button" class="btn-remove-preview" onclick="removeImagePreview()" title="Remove photo">&times;</button>
+          <div class="stat-body">
+            <div class="stat-header-label">Items in Safe Custody</div>
+            <div class="stat-number-row">
+              <span class="stat-giant-num" style="color: #059669;">Active</span>
+              <span class="stat-unit-text">custody catalog</span>
+            </div>
+            <div class="stat-subinfo">Stored & ready for owner return</div>
+            <a href="/dashboard?tab=items" class="stat-action-link" style="color: #059669;">
+              <span>View inventory table</span>
+              <span class="arrow">&rarr;</span>
+            </a>
           </div>
         </div>
       </section>
@@ -295,7 +289,24 @@
               >Black wireless headphones in a navy zip case. Found on a study table near the library entrance.</textarea>
             </div>
 
-            <!-- Row 3: Found Date & Claim Status -->
+            <!-- Row 3: Serial Number (Optional) & Found Date * -->
+            <div class="form-field-group">
+              <label for="serial_number" class="field-label-bold">Serial Number / Unique Markings (Optional)</label>
+              <div class="custom-select-wrap">
+                <input 
+                  type="text" 
+                  name="serial_number" 
+                  id="serial_number" 
+                  class="admin-text-input" 
+                  placeholder="e.g. SN-892348, engraved name, or device tag"
+                  maxlength="255"
+                >
+              </div>
+              <div class="field-helper-note">
+                Optional hardware serial number, IMEI, or distinctive identification mark.
+              </div>
+            </div>
+
             <div class="form-field-group">
               <label for="found_date" class="field-label-bold">Found Date *</label>
               <div class="date-input-wrap">
@@ -310,6 +321,7 @@
               </div>
             </div>
 
+            <!-- Row 4: Claim Status & Reporter -->
             <div class="form-field-group">
               <label class="field-label-bold">Claim Status *</label>
               <div class="radio-pill-group">
@@ -326,7 +338,6 @@
               </div>
             </div>
 
-            <!-- Row 4: Reporter & Admin (Posted By) -->
             <div class="form-field-group">
               <label for="finder_name" class="field-label-bold">Reporter (Student/Staff Name) *</label>
               <div class="custom-select-wrap">
@@ -341,11 +352,12 @@
                 >
               </div>
               <div class="field-helper-note">
-                The person who found and turned in the item. Admins can register items on behalf of staff.
+                The person who found and turned in the item.
               </div>
             </div>
 
-            <div class="form-field-group">
+            <!-- Row 5: Admin / Security Officer (Posted By - Span 2) -->
+            <div class="form-field-group span-2">
               <label for="admin_posted_by" class="field-label-bold"><%= (user?.role || (typeof role !== 'undefined' ? role : 'admin')) === 'admin' ? 'Admin' : 'Security Officer' %> (Posted By)</label>
               <div class="locked-input-wrap">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#64748B" stroke-width="2">
@@ -365,7 +377,55 @@
                 </svg>
               </div>
               <div class="field-helper-note">
-                Automatically populated from your signed-in <%= (user?.role || (typeof role !== 'undefined' ? role : 'admin')) === 'admin' ? 'admin' : 'security officer' %> account.
+                Automatically recorded under your logged-in officer session for the chain of custody.
+              </div>
+            </div>
+
+            <!-- Row 6: Item Photo Upload (Span 2 - Integrated directly into form) -->
+            <div class="form-field-group span-2">
+              <label class="field-label-bold">Item Photograph *</label>
+              
+              <div class="form-photo-upload-zone" id="form-photo-upload-zone">
+                <input type="file" id="item-image-file" accept="image/png, image/jpeg, image/webp" class="visually-hidden" style="display: none;" onchange="handleImageFileSelect(this)" required>
+                
+                <div class="photo-dropzone-box" id="photo-dropzone-prompt" onclick="document.getElementById('item-image-file').click()">
+                  <div class="photo-dropzone-content">
+                    <div class="upload-icon-circle">
+                      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#2563EB" stroke-width="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                        <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                        <polyline points="21 15 16 10 5 21"></polyline>
+                      </svg>
+                    </div>
+                    <div class="photo-dropzone-text">
+                      <div class="upload-primary-text">
+                        <button type="button" class="btn-browse-photo" onclick="event.stopPropagation(); document.getElementById('item-image-file').click()">
+                          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                          <span>Upload photo</span>
+                        </button>
+                        <span class="upload-or-text">or drag and drop file here</span>
+                      </div>
+                      <div class="upload-specs-text">JPG, PNG, or WEBP &bull; Max 5 MB &bull; Required for catalog display and owner verification</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div id="upload-preview-container" class="upload-preview-container hidden" style="margin-top: 10px;">
+                  <div class="preview-card-inline">
+                    <img id="upload-preview-img" src="" alt="Selected item preview" class="preview-thumb-lg">
+                    <div class="preview-card-details">
+                      <div class="preview-card-filename" id="preview-filename-text">photo.jpg</div>
+                      <div class="preview-card-status">
+                        <span class="preview-status-dot"></span>
+                        <span>Photo attached & ready for custodial upload</span>
+                      </div>
+                    </div>
+                    <button type="button" class="btn-remove-preview-inline" onclick="removeImagePreview()" title="Remove photo">
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                      <span>Remove</span>
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -536,11 +596,15 @@
     reader.onload = function(e) {
       const preview = document.getElementById('upload-preview-img');
       const container = document.getElementById('upload-preview-container');
-      const dropzone = document.querySelector('.upload-dropzone-inner');
-      if (preview && container) {
-        preview.src = e.target.result;
-        container.classList.remove('hidden');
-        if (dropzone) dropzone.classList.add('hidden');
+      const dropPrompt = document.getElementById('photo-dropzone-prompt');
+      const filenameText = document.getElementById('preview-filename-text');
+
+      if (preview) preview.src = e.target.result;
+      if (filenameText) filenameText.textContent = file.name;
+      if (container) container.classList.remove('hidden');
+      if (dropPrompt) {
+        dropPrompt.classList.add('hidden');
+        dropPrompt.style.borderColor = '';
       }
     };
     reader.readAsDataURL(file);
@@ -549,17 +613,48 @@
   function removeImagePreview() {
     const input = document.getElementById('item-image-file');
     const container = document.getElementById('upload-preview-container');
-    const dropzone = document.querySelector('.upload-dropzone-inner');
+    const dropPrompt = document.getElementById('photo-dropzone-prompt');
     if (input) input.value = '';
     if (container) container.classList.add('hidden');
-    if (dropzone) dropzone.classList.remove('hidden');
+    if (dropPrompt) dropPrompt.classList.remove('hidden');
   }
+
+  // Setup drag-and-drop for inline photo upload box
+  document.addEventListener('DOMContentLoaded', () => {
+    const dropBox = document.getElementById('photo-dropzone-prompt');
+    const fileInput = document.getElementById('item-image-file');
+    if (dropBox && fileInput) {
+      ['dragenter', 'dragover'].forEach(eventName => {
+        dropBox.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropBox.classList.add('drag-over');
+        }, false);
+      });
+      ['dragleave', 'drop'].forEach(eventName => {
+        dropBox.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropBox.classList.remove('drag-over');
+        }, false);
+      });
+      dropBox.addEventListener('drop', (e) => {
+        const dt = e.dataTransfer;
+        if (dt && dt.files && dt.files.length > 0) {
+          fileInput.files = dt.files;
+          handleImageFileSelect(fileInput);
+        }
+      }, false);
+    }
+  });
 
   function handleClearForm() {
     const textarea = document.getElementById('item_description');
     if (textarea) {
       setTimeout(() => updateCharCounter(textarea), 50);
     }
+    const serialInput = document.getElementById('serial_number');
+    if (serialInput) serialInput.value = '';
     removeImagePreview();
   }
 
@@ -576,6 +671,7 @@
       const categoryId = document.getElementById('category_id').value;
       const locationId = document.getElementById('location_id').value;
       const description = document.getElementById('item_description').value.trim();
+      const serialNumber = document.getElementById('serial_number')?.value.trim() || null;
       const foundDate = document.getElementById('found_date').value;
       const finderName = document.getElementById('finder_name').value.trim();
       const statusPill = document.querySelector('input[name="claim_status"]:checked')?.value || 'Stored';
@@ -585,30 +681,39 @@
         return;
       }
 
+      // 1. Photo is strictly required
+      const imageFileInput = document.getElementById('item-image-file');
+      if (!imageFileInput || !imageFileInput.files || !imageFileInput.files[0]) {
+        showToast('Please upload an item photograph. Photo is required.', 'error');
+        const dropBox = document.getElementById('photo-dropzone-prompt');
+        if (dropBox) {
+          dropBox.style.borderColor = '#EF4444';
+          dropBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        return;
+      }
+
       // Title derived from first sentence or phrase
       const title = description.length > 50 
         ? description.slice(0, 47) + '...' 
         : description;
 
-      // 1. Upload image file if user selected one
+      // Upload image file
       let uploadedImageUrl = null;
-      const imageFileInput = document.getElementById('item-image-file');
-      if (imageFileInput && imageFileInput.files && imageFileInput.files[0]) {
-        btn.innerHTML = '<span>Uploading photo...</span>';
-        const imgFormData = new FormData();
-        imgFormData.append('image', imageFileInput.files[0]);
+      btn.innerHTML = '<span>Uploading photo...</span>';
+      const imgFormData = new FormData();
+      imgFormData.append('image', imageFileInput.files[0]);
 
-        const uploadRes = await fetch('/api/v1/items/upload', {
-          method: 'POST',
-          body: imgFormData,
-        });
+      const uploadRes = await fetch('/api/v1/items/upload', {
+        method: 'POST',
+        body: imgFormData,
+      });
 
-        const uploadJson = await uploadRes.json();
-        if (!uploadRes.ok) {
-          throw new Error(uploadJson.error?.message || uploadJson.message || 'Image upload failed');
-        }
-        uploadedImageUrl = uploadJson.data?.imageUrl || null;
+      const uploadJson = await uploadRes.json();
+      if (!uploadRes.ok) {
+        throw new Error(uploadJson.error?.message || uploadJson.message || 'Image upload failed');
       }
+      uploadedImageUrl = uploadJson.data?.imageUrl || null;
 
       btn.innerHTML = '<span>Registering...</span>';
 
@@ -622,6 +727,7 @@
         storage_notes: `Status: ${statusPill} - Registered via Console`,
         color: 'Neutral',
         brand: 'Standard',
+        serial_number: serialNumber,
         image_url: uploadedImageUrl,
       };
 
@@ -683,6 +789,8 @@
       // Reset form fields
       document.getElementById('item_description').value = '';
       updateCharCounter(document.getElementById('item_description'));
+      const serialInput = document.getElementById('serial_number');
+      if (serialInput) serialInput.value = '';
       removeImagePreview();
 
     } catch (err) {
@@ -696,15 +804,30 @@
   function showToast(msg, type = 'info') {
     const container = document.getElementById('toast-container');
     if (!container) return;
+    const icons = {
+      success: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>`,
+      error:   `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`,
+      info:    `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>`,
+    };
+    const titles = { success: 'Success', error: 'Error', info: 'Notice' };
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
-    toast.textContent = msg;
+    toast.innerHTML = `
+      <div class="toast-icon-wrap">${icons[type] || icons.info}</div>
+      <div class="toast-content">
+        <div class="toast-title">${titles[type] || 'Notice'}</div>
+        <div class="toast-message">${msg}</div>
+      </div>
+      <button class="toast-close-btn" onclick="this.closest('.toast').remove()" aria-label="Dismiss">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    `;
     container.appendChild(toast);
     setTimeout(() => {
       toast.style.opacity = '0';
-      toast.style.transform = 'translateY(10px)';
-      setTimeout(() => toast.remove(), 300);
-    }, 4000);
+      toast.style.transform = 'translateY(6px)';
+      setTimeout(() => toast.remove(), 280);
+    }, 5000);
   }
 </script>
 
