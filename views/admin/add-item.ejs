@@ -1,0 +1,835 @@
+<%- include('../partials/head', { title: title || 'Admin Console | Add Found Item' }) %>
+
+<div class="admin-app-layout">
+  <!-- Left Sidebar (ADMIN WORKSPACE) -->
+  <aside class="admin-sidebar">
+    <div class="sidebar-top-branding">
+      <a href="/" class="brand-link" title="Return to Public Catalog">
+        <div class="brand-crest-box">
+          <img src="/images/CSPCLogo.jpeg" alt="CSPC Logo" class="brand-crest-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+          <svg style="display: none;" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            <path d="M9 12l2 2 4-4"></path>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <div class="brand-abbr">CSPC</div>
+          <div class="brand-sub">Lost & Found</div>
+        </div>
+      </a>
+      <div class="brand-college-tag">CAMARINES SUR POLYTECHNIC COLLEGES</div>
+    </div>
+
+    <!-- Admin Navigation Links -->
+    <div class="admin-nav-section">
+      <div class="admin-section-label"><%= (user?.role || 'admin') === 'admin' ? 'ADMIN WORKSPACE' : 'SECURITY WORKSPACE' %></div>
+      <nav class="admin-nav-menu">
+        <a href="/admin/found-items/new" class="admin-nav-item active">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line>
+          </svg>
+          <span>ADD FOUND ITEM</span>
+        </a>
+
+        <a href="/dashboard?tab=items" class="admin-nav-item">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+          <span>Item Inventory</span>
+        </a>
+
+        <a href="/dashboard?tab=claims" class="admin-nav-item">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line>
+          </svg>
+          <span>Claims Verification</span>
+        </a>
+
+        <a href="/" class="admin-nav-item" target="_blank" title="Preview Public Catalog">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+          </svg>
+          <span>Public Catalog View</span>
+        </a>
+      </nav>
+    </div>
+
+    <!-- Sidebar Bottom: Campus Safety Card & User Profile -->
+    <div class="admin-sidebar-bottom">
+      <div class="safety-advisory-card">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#2563EB" stroke-width="2">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          <path d="M9 12l2 2 4-4"></path>
+        </svg>
+        <div class="safety-card-title">A safer campus, together.</div>
+        <p class="safety-card-text">
+          Keep every item accounted for. Verify identity before release.
+        </p>
+      </div>
+
+      <div class="admin-user-profile-strip">
+        <div class="user-avatar-initials">
+          <%= (user?.fullName || user?.full_name || ((user?.role || (typeof role !== 'undefined' ? role : 'admin')) === 'guard' ? 'Ana Cruz' : 'Juan Reyes')).split(' ').map(n => n[0]).slice(0, 2).join('') %>
+        </div>
+        <div class="user-meta-info">
+          <div class="user-meta-name"><%= user?.fullName || user?.full_name || ((user?.role || (typeof role !== 'undefined' ? role : 'admin')) === 'guard' ? 'Ana Cruz' : 'Juan Reyes') %></div>
+          <div class="user-meta-role"><%= (user?.role || (typeof role !== 'undefined' ? role : 'admin')) === 'admin' ? 'Campus Admin' : 'Security Officer' %></div>
+        </div>
+        <a href="/logout" class="btn-sidebar-logout" title="Sign Out of Session">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Viewport Content -->
+  <main class="admin-main-viewport">
+    <!-- Top Breadcrumb & Live Session Bar -->
+    <header class="admin-topbar">
+      <div class="admin-breadcrumb">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#2563EB" stroke-width="2.2">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          <path d="M9 12l2 2 4-4"></path>
+        </svg>
+        <span><%= (user?.role || 'admin') === 'admin' ? 'Admin console' : 'Security desk' %></span>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-active">Add found item</span>
+      </div>
+
+      <div class="admin-topbar-right">
+        <div class="secure-session-indicator">
+          <span class="session-green-dot"></span>
+          <span>Secure session</span>
+        </div>
+        <div class="admin-date-text" id="admin-live-date">
+          <%= new Date().toLocaleDateString('en-US', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' }) %>
+        </div>
+        <button type="button" class="btn-topbar-bell" title="System Notifications" aria-label="Notifications">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+          </svg>
+          <span class="bell-badge-dot"></span>
+        </button>
+      </div>
+    </header>
+
+    <div class="admin-content-container">
+      <!-- Hero Banner -->
+      <section class="admin-hero-banner">
+        <div class="hero-left">
+          <h1 class="hero-main-title">Every item. A way back.</h1>
+          <p class="hero-subtext">Register a found item and help it reach its rightful owner.</p>
+        </div>
+        <div class="hero-right">
+          <div class="badge-access-pill">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+            <span><%= (user?.role || 'admin').toUpperCase() %> ACCESS</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Row 1: Two Summary Cards (Active Claims & Inventory Overview) -->
+      <section class="admin-summary-grid">
+        <!-- Card 1: Active Claims -->
+        <div class="summary-stat-card">
+          <div class="stat-icon-wrap blue">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#2563EB" stroke-width="2">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+              <polyline points="22,6 12,13 2,6"></polyline>
+            </svg>
+          </div>
+          <div class="stat-body">
+            <div class="stat-header-label">Current Active Claims</div>
+            <div class="stat-number-row">
+              <span class="stat-giant-num">24</span>
+              <span class="stat-unit-text">open claims</span>
+            </div>
+            <div class="stat-subinfo">06 awaiting verification</div>
+            <a href="/dashboard?tab=claims" class="stat-action-link">
+              <span>Review claims</span>
+              <span class="arrow">&rarr;</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Card 2: Safe Custody Inventory -->
+        <div class="summary-stat-card">
+          <div class="stat-icon-wrap emerald">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#059669" stroke-width="2">
+              <rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect>
+              <rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect>
+            </svg>
+          </div>
+          <div class="stat-body">
+            <div class="stat-header-label">Items in Safe Custody</div>
+            <div class="stat-number-row">
+              <span class="stat-giant-num" style="color: #059669;">Active</span>
+              <span class="stat-unit-text">custody catalog</span>
+            </div>
+            <div class="stat-subinfo">Stored & ready for owner return</div>
+            <a href="/dashboard?tab=items" class="stat-action-link" style="color: #059669;">
+              <span>View inventory table</span>
+              <span class="arrow">&rarr;</span>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <!-- Main "ADD ITEM" Form Card -->
+      <section class="admin-form-panel">
+        <div class="form-center-heading">
+          <h2 class="form-title-text">ADD ITEM</h2>
+          <p class="form-subtitle-text">
+            Admins and security officers can register new found items into inventory custody.
+          </p>
+        </div>
+
+        <!-- Success Alert Banner (hidden initially) -->
+        <div id="add-item-success-banner" style="display: none; margin-bottom: 24px; padding: 16px 20px; background: #F0FDF4; border: 1.5px solid #86EFAC; border-radius: 12px; align-items: center; justify-content: space-between; gap: 16px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="width: 36px; height: 36px; border-radius: 50%; background: #DCFCE7; display: flex; align-items: center; justify-content: center; color: #16A34A; flex-shrink: 0;">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </div>
+            <div>
+              <div style="font-weight: 700; color: #14532D; font-size: 0.95rem;">Item Recorded & Stored in Inventory!</div>
+              <div style="color: #166534; font-size: 0.85rem;" id="success-banner-msg">Item has been securely logged with audit tracking.</div>
+            </div>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <a href="/dashboard?tab=items" style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 0.85rem; padding: 8px 16px; border-radius: 8px; background: #16A34A; color: white;">
+              <span>View in Inventory</span>
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+            </a>
+            <button type="button" onclick="document.getElementById('add-item-success-banner').style.display='none'" style="background: none; border: none; color: #15803D; cursor: pointer; font-size: 1.2rem; padding: 4px 8px;">&times;</button>
+          </div>
+        </div>
+
+        <form id="admin-add-item-form" onsubmit="handlePostFoundItem(event)" novalidate>
+          <!-- Section Bar -->
+          <div class="form-section-strip">
+            <div class="strip-left">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#2563EB" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="2" y1="12" x2="22" y2="12"></line>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+              </svg>
+              <span>ITEM INFORMATION</span>
+            </div>
+            <div class="strip-right">* Required fields</div>
+          </div>
+
+          <div class="form-grid-fields">
+            <!-- Row 1: Category ID & Found Location -->
+            <div class="form-field-group">
+              <label for="category_id" class="field-label-bold">Category ID *</label>
+              <div class="custom-select-wrap">
+                <select name="category_id" id="category_id" class="admin-select-input" required>
+                  <% if (categories && categories.length > 0) { %>
+                    <% categories.forEach((cat, idx) => { %>
+                      <option value="<%= cat.category_id %>" <%= idx === 0 ? 'selected' : '' %>>
+                        CAT-00<%= cat.category_id %> &bull; <%= cat.category_name %>
+                      </option>
+                    <% }) %>
+                  <% } else { %>
+                    <option value="1">CAT-003 &bull; Electronics</option>
+                    <option value="2">CAT-001 &bull; Valuables & Jewelry</option>
+                    <option value="3">CAT-002 &bull; Bags & Wallets</option>
+                    <option value="4">CAT-004 &bull; Documents & IDs</option>
+                  <% } %>
+                </select>
+                <svg class="select-chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </div>
+            </div>
+
+            <div class="form-field-group">
+              <label for="location_id" class="field-label-bold">Found Location *</label>
+              <div class="custom-select-wrap">
+                <select name="location_id" id="location_id" class="admin-select-input" required>
+                  <% if (locations && locations.length > 0) { %>
+                    <% locations.forEach((loc, idx) => { %>
+                      <option value="<%= loc.location_id %>" <%= idx === 0 ? 'selected' : '' %>>
+                        <%= loc.location_name %>
+                      </option>
+                    <% }) %>
+                  <% } else { %>
+                    <option value="1">Main Library - Reading area</option>
+                    <option value="2">Academic Building A - 2nd Floor</option>
+                    <option value="3">Gymnasium / Sports Complex</option>
+                    <option value="4">University Cafeteria</option>
+                  <% } %>
+                </select>
+                <svg class="select-chevron" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+              </div>
+            </div>
+
+            <!-- Row 2: Item Name/Description (Span 2) -->
+            <div class="form-field-group span-2">
+              <div class="field-label-row">
+                <label for="item_description" class="field-label-bold">Item Name/Description *</label>
+                <span class="char-counter-text" id="desc-char-counter">108 / 300</span>
+              </div>
+              <textarea 
+                name="description" 
+                id="item_description" 
+                class="admin-textarea-input" 
+                rows="3" 
+                maxlength="300" 
+                placeholder="Black wireless headphones in a navy zip case. Found on a study table near the library entrance."
+                oninput="updateCharCounter(this)"
+                required
+              >Black wireless headphones in a navy zip case. Found on a study table near the library entrance.</textarea>
+            </div>
+
+            <!-- Row 3: Serial Number (Optional) & Found Date * -->
+            <div class="form-field-group">
+              <label for="serial_number" class="field-label-bold">Serial Number / Unique Markings (Optional)</label>
+              <div class="custom-select-wrap">
+                <input 
+                  type="text" 
+                  name="serial_number" 
+                  id="serial_number" 
+                  class="admin-text-input" 
+                  placeholder="e.g. SN-892348, engraved name, or device tag"
+                  maxlength="255"
+                >
+              </div>
+              <div class="field-helper-note">
+                Optional hardware serial number, IMEI, or distinctive identification mark.
+              </div>
+            </div>
+
+            <div class="form-field-group">
+              <label for="found_date" class="field-label-bold">Found Date *</label>
+              <div class="date-input-wrap">
+                <input 
+                  type="date" 
+                  name="found_date" 
+                  id="found_date" 
+                  class="admin-text-input" 
+                  value="<%= new Date().toISOString().split('T')[0] %>" 
+                  required
+                >
+              </div>
+            </div>
+
+            <!-- Row 4: Claim Status & Reporter -->
+            <div class="form-field-group">
+              <label class="field-label-bold">Claim Status *</label>
+              <div class="radio-pill-group">
+                <label class="radio-pill active" id="pill-stored">
+                  <input type="radio" name="claim_status" value="Stored" checked onchange="handleStatusPillChange(this)">
+                  <span class="radio-dot"></span>
+                  <span class="radio-label">Stored</span>
+                </label>
+                <label class="radio-pill" id="pill-processing">
+                  <input type="radio" name="claim_status" value="Processing" onchange="handleStatusPillChange(this)">
+                  <span class="radio-dot"></span>
+                  <span class="radio-label">Processing</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="form-field-group">
+              <label for="finder_name" class="field-label-bold">Reporter (Student/Staff Name) *</label>
+              <div class="custom-select-wrap">
+                <input 
+                  type="text" 
+                  name="finder_name" 
+                  id="finder_name" 
+                  class="admin-text-input" 
+                  value="Maria Santos - Student" 
+                  placeholder="Enter finder's name & role..." 
+                  required
+                >
+              </div>
+              <div class="field-helper-note">
+                The person who found and turned in the item.
+              </div>
+            </div>
+
+            <!-- Row 5: Admin / Security Officer (Posted By - Span 2) -->
+            <div class="form-field-group span-2">
+              <label for="admin_posted_by" class="field-label-bold"><%= (user?.role || (typeof role !== 'undefined' ? role : 'admin')) === 'admin' ? 'Admin' : 'Security Officer' %> (Posted By)</label>
+              <div class="locked-input-wrap">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#64748B" stroke-width="2">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+                <input 
+                  type="text" 
+                  id="admin_posted_by" 
+                  class="admin-text-input locked" 
+                  value="<%= (user?.fullName || user?.full_name || ((user?.role || (typeof role !== 'undefined' ? role : 'admin')) === 'guard' ? 'Ana Cruz' : 'Juan Reyes')) %> - <%= ((user?.role || (typeof role !== 'undefined' ? role : 'admin')) === 'guard' ? 'SEC-007' : 'ADM-014') %>" 
+                  readonly
+                >
+                <svg class="lock-end-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#94A3B8" stroke-width="2">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+              </div>
+              <div class="field-helper-note">
+                Automatically recorded under your logged-in officer session for the chain of custody.
+              </div>
+            </div>
+
+            <!-- Row 6: Item Photo Upload (Span 2 - Integrated directly into form) -->
+            <div class="form-field-group span-2">
+              <label class="field-label-bold">Item Photograph *</label>
+              
+              <div class="form-photo-upload-zone" id="form-photo-upload-zone">
+                <input type="file" id="item-image-file" accept="image/png, image/jpeg, image/webp" class="visually-hidden" style="display: none;" onchange="handleImageFileSelect(this)" required>
+                
+                <div class="photo-dropzone-box" id="photo-dropzone-prompt" onclick="document.getElementById('item-image-file').click()">
+                  <div class="photo-dropzone-content">
+                    <div class="upload-icon-circle">
+                      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#2563EB" stroke-width="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                        <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                        <polyline points="21 15 16 10 5 21"></polyline>
+                      </svg>
+                    </div>
+                    <div class="photo-dropzone-text">
+                      <div class="upload-primary-text">
+                        <button type="button" class="btn-browse-photo" onclick="event.stopPropagation(); document.getElementById('item-image-file').click()">
+                          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                          <span>Upload photo</span>
+                        </button>
+                        <span class="upload-or-text">or drag and drop file here</span>
+                      </div>
+                      <div class="upload-specs-text">JPG, PNG, or WEBP &bull; Max 5 MB &bull; Required for catalog display and owner verification</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div id="upload-preview-container" class="upload-preview-container hidden" style="margin-top: 10px;">
+                  <div class="preview-card-inline">
+                    <img id="upload-preview-img" src="" alt="Selected item preview" class="preview-thumb-lg">
+                    <div class="preview-card-details">
+                      <div class="preview-card-filename" id="preview-filename-text">photo.jpg</div>
+                      <div class="preview-card-status">
+                        <span class="preview-status-dot"></span>
+                        <span>Photo attached & ready for custodial upload</span>
+                      </div>
+                    </div>
+                    <button type="button" class="btn-remove-preview-inline" onclick="removeImagePreview()" title="Remove photo">
+                      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                      <span>Remove</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Form Footer Bar with Audit notice & CTA buttons -->
+          <div class="form-action-footer">
+            <div class="footer-audit-notice">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#2563EB" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                <path d="M9 12l2 2 4-4"></path>
+              </svg>
+              <span>This <%= (user?.role || (typeof role !== 'undefined' ? role : 'admin')) === 'admin' ? 'admin' : 'security officer' %> submission will be recorded in the audit log.</span>
+            </div>
+
+            <div class="footer-btn-cluster">
+              <button type="reset" class="btn-clear-ghost" onclick="handleClearForm()">Clear form</button>
+              <button type="submit" class="btn-blue-submit" id="btn-submit-item">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                <span>Post found item</span>
+              </button>
+            </div>
+          </div>
+        </form>
+      </section>
+
+      <!-- Bottom: Recent Activity Log Section -->
+      <section class="admin-recent-activity-panel">
+        <div class="activity-header-bar">
+          <div class="activity-title-group">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#2563EB" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+            <h3 class="activity-title">Recent activity</h3>
+            <span class="badge-today-pill">Today</span>
+          </div>
+          <a href="/dashboard?tab=audit" class="activity-view-all-link">
+            <span>View audit logs</span>
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><line x1="7" y1="17" x2="17" y2="7"></line><polyline points="7 7 17 7 17 17"></polyline></svg>
+          </a>
+        </div>
+
+        <div class="activity-table-wrap">
+          <table class="activity-stream-table" id="activity-stream-table">
+            <tbody>
+              <!-- Row 1: Found item registered -->
+              <tr>
+                <td class="col-icon">
+                  <div class="activity-icon-badge blue">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#2563EB" stroke-width="2">
+                      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                      <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                      <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                    </svg>
+                  </div>
+                </td>
+                <td class="col-action-title">
+                  <strong>Found item registered</strong>
+                </td>
+                <td class="col-item-name">
+                  <span class="item-title-text">Blue water bottle</span>
+                  <span class="item-code-tag">&bull; FI-0108</span>
+                </td>
+                <td class="col-officer-name">Juan Reyes</td>
+                <td class="col-status-badge">
+                  <span class="status-pill-subtle stored">Stored</span>
+                </td>
+                <td class="col-time-ago">10:42 AM</td>
+              </tr>
+
+              <!-- Row 2: Claim moved to processing -->
+              <tr>
+                <td class="col-icon">
+                  <div class="activity-icon-badge amber">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#D97706" stroke-width="2">
+                      <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                      <line x1="6" y1="8" x2="6.01" y2="8"></line>
+                      <line x1="10" y1="8" x2="18" y2="8"></line>
+                      <line x1="6" y1="12" x2="6.01" y2="12"></line>
+                      <line x1="10" y1="12" x2="14" y2="12"></line>
+                    </svg>
+                  </div>
+                </td>
+                <td class="col-action-title">
+                  <strong>Claim moved to processing</strong>
+                </td>
+                <td class="col-item-name">
+                  <span class="item-title-text">Student ID card</span>
+                  <span class="item-code-tag">&bull; FI-0102</span>
+                </td>
+                <td class="col-officer-name">Ana Cruz</td>
+                <td class="col-status-badge">
+                  <span class="status-pill-subtle processing">Processing</span>
+                </td>
+                <td class="col-time-ago">10:18 AM</td>
+              </tr>
+
+              <!-- Row 3: Item returned to owner -->
+              <tr>
+                <td class="col-icon">
+                  <div class="activity-icon-badge green">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#059669" stroke-width="2">
+                      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                      <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                  </div>
+                </td>
+                <td class="col-action-title">
+                  <strong>Item returned to owner</strong>
+                </td>
+                <td class="col-item-name">
+                  <span class="item-title-text">Black umbrella</span>
+                  <span class="item-code-tag">&bull; FI-0086</span>
+                </td>
+                <td class="col-officer-name">Juan Reyes</td>
+                <td class="col-status-badge">
+                  <span class="status-pill-subtle returned">Returned</span>
+                </td>
+                <td class="col-time-ago">09:55 AM</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Institutional Footer -->
+      <footer class="admin-institutional-footer">
+        <div>Camarines Sur Polytechnic Colleges &bull; Campus Security Office</div>
+        <div class="footer-meta">Concept preview &bull; Sample records</div>
+      </footer>
+    </div>
+  </main>
+</div>
+
+<!-- Toast notifications -->
+<div id="toast-container" class="toast-container"></div>
+
+<script>
+  // Character counter for textarea
+  function updateCharCounter(el) {
+    const counter = document.getElementById('desc-char-counter');
+    if (counter) {
+      counter.textContent = `${el.value.length} / 300`;
+    }
+  }
+
+  // Handle radio pills
+  function handleStatusPillChange(input) {
+    document.querySelectorAll('.radio-pill').forEach(pill => pill.classList.remove('active'));
+    if (input.checked && input.closest('.radio-pill')) {
+      input.closest('.radio-pill').classList.add('active');
+    }
+  }
+
+  // Handle image upload selection & preview
+  function handleImageFileSelect(input) {
+    const file = input.files && input.files[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('Image size exceeds 5MB limit. Please choose a smaller photo.', 'error');
+      input.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const preview = document.getElementById('upload-preview-img');
+      const container = document.getElementById('upload-preview-container');
+      const dropPrompt = document.getElementById('photo-dropzone-prompt');
+      const filenameText = document.getElementById('preview-filename-text');
+
+      if (preview) preview.src = e.target.result;
+      if (filenameText) filenameText.textContent = file.name;
+      if (container) container.classList.remove('hidden');
+      if (dropPrompt) {
+        dropPrompt.classList.add('hidden');
+        dropPrompt.style.borderColor = '';
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function removeImagePreview() {
+    const input = document.getElementById('item-image-file');
+    const container = document.getElementById('upload-preview-container');
+    const dropPrompt = document.getElementById('photo-dropzone-prompt');
+    if (input) input.value = '';
+    if (container) container.classList.add('hidden');
+    if (dropPrompt) dropPrompt.classList.remove('hidden');
+  }
+
+  // Setup drag-and-drop for inline photo upload box
+  document.addEventListener('DOMContentLoaded', () => {
+    const dropBox = document.getElementById('photo-dropzone-prompt');
+    const fileInput = document.getElementById('item-image-file');
+    if (dropBox && fileInput) {
+      ['dragenter', 'dragover'].forEach(eventName => {
+        dropBox.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropBox.classList.add('drag-over');
+        }, false);
+      });
+      ['dragleave', 'drop'].forEach(eventName => {
+        dropBox.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          dropBox.classList.remove('drag-over');
+        }, false);
+      });
+      dropBox.addEventListener('drop', (e) => {
+        const dt = e.dataTransfer;
+        if (dt && dt.files && dt.files.length > 0) {
+          fileInput.files = dt.files;
+          handleImageFileSelect(fileInput);
+        }
+      }, false);
+    }
+  });
+
+  function handleClearForm() {
+    const textarea = document.getElementById('item_description');
+    if (textarea) {
+      setTimeout(() => updateCharCounter(textarea), 50);
+    }
+    const serialInput = document.getElementById('serial_number');
+    if (serialInput) serialInput.value = '';
+    removeImagePreview();
+  }
+
+  // Handle Post Found Item via API
+  async function handlePostFoundItem(event) {
+    event.preventDefault();
+    const btn = document.getElementById('btn-submit-item');
+    const originalText = btn.innerHTML;
+
+    try {
+      btn.disabled = true;
+      btn.innerHTML = '<span>Registering...</span>';
+
+      const categoryId = document.getElementById('category_id').value;
+      const locationId = document.getElementById('location_id').value;
+      const description = document.getElementById('item_description').value.trim();
+      const serialNumber = document.getElementById('serial_number')?.value.trim() || null;
+      const foundDate = document.getElementById('found_date').value;
+      const finderName = document.getElementById('finder_name').value.trim();
+      const statusPill = document.querySelector('input[name="claim_status"]:checked')?.value || 'Stored';
+
+      if (!description) {
+        showToast('Please provide an item description.', 'error');
+        return;
+      }
+
+      // 1. Photo is strictly required
+      const imageFileInput = document.getElementById('item-image-file');
+      if (!imageFileInput || !imageFileInput.files || !imageFileInput.files[0]) {
+        showToast('Please upload an item photograph. Photo is required.', 'error');
+        const dropBox = document.getElementById('photo-dropzone-prompt');
+        if (dropBox) {
+          dropBox.style.borderColor = '#EF4444';
+          dropBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        return;
+      }
+
+      // Title derived from first sentence or phrase
+      const title = description.length > 50 
+        ? description.slice(0, 47) + '...' 
+        : description;
+
+      // Upload image file
+      let uploadedImageUrl = null;
+      btn.innerHTML = '<span>Uploading photo...</span>';
+      const imgFormData = new FormData();
+      imgFormData.append('image', imageFileInput.files[0]);
+
+      const uploadRes = await fetch('/api/v1/items/upload', {
+        method: 'POST',
+        body: imgFormData,
+      });
+
+      const uploadJson = await uploadRes.json();
+      if (!uploadRes.ok) {
+        throw new Error(uploadJson.error?.message || uploadJson.message || 'Image upload failed');
+      }
+      uploadedImageUrl = uploadJson.data?.imageUrl || null;
+
+      btn.innerHTML = '<span>Registering...</span>';
+
+      const payload = {
+        title,
+        description,
+        category_id: parseInt(categoryId, 10),
+        location_id: parseInt(locationId, 10),
+        found_at: foundDate ? new Date(foundDate).toISOString() : new Date().toISOString(),
+        finder_name: finderName || 'Campus Finder',
+        storage_notes: `Status: ${statusPill} - Registered via Console`,
+        color: 'Neutral',
+        brand: 'Standard',
+        serial_number: serialNumber,
+        image_url: uploadedImageUrl,
+      };
+
+      const res = await fetch('/api/v1/items', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error?.message || data.message || 'Failed to register found item');
+      }
+
+      const assignedCode = `#FI-0${data.data?.item_id || '99'}`;
+      showToast(`Item ${assignedCode} successfully stored into inventory!`, 'success');
+
+      // Display the green confirmation banner with direct Go to Inventory action
+      const banner = document.getElementById('add-item-success-banner');
+      const bannerMsg = document.getElementById('success-banner-msg');
+      if (banner && bannerMsg) {
+        bannerMsg.innerHTML = `<strong>${title}</strong> (${assignedCode}) status set to <strong>${statusPill}</strong> and logged into audit trail.`;
+        banner.style.display = 'flex';
+        banner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+
+      // Prepend to recent activity stream
+      const tableBody = document.querySelector('#activity-stream-table tbody');
+      if (tableBody) {
+        const newRow = document.createElement('tr');
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        newRow.innerHTML = `
+          <td class="col-icon">
+            <div class="activity-icon-badge blue">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#2563EB" stroke-width="2">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                <line x1="12" y1="22.08" x2="12" y2="12"></line>
+              </svg>
+            </div>
+          </td>
+          <td class="col-action-title">
+            <strong>Found item registered</strong>
+          </td>
+          <td class="col-item-name">
+            <span class="item-title-text">${title}</span>
+            <span class="item-code-tag">&bull; ${assignedCode}</span>
+          </td>
+          <td class="col-officer-name"><%= user?.fullName || user?.full_name || ((user?.role || (typeof role !== 'undefined' ? role : 'admin')) === 'guard' ? 'Ana Cruz' : 'Juan Reyes') %></td>
+          <td class="col-status-badge">
+            <span class="status-pill-subtle stored">${statusPill}</span>
+          </td>
+          <td class="col-time-ago">${timeStr}</td>
+        `;
+        tableBody.prepend(newRow);
+      }
+
+      // Reset form fields
+      document.getElementById('item_description').value = '';
+      updateCharCounter(document.getElementById('item_description'));
+      const serialInput = document.getElementById('serial_number');
+      if (serialInput) serialInput.value = '';
+      removeImagePreview();
+
+    } catch (err) {
+      showToast(err.message || 'Error submitting item', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = originalText;
+    }
+  }
+
+  function showToast(msg, type = 'info') {
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    const icons = {
+      success: `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>`,
+      error:   `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`,
+      info:    `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>`,
+    };
+    const titles = { success: 'Success', error: 'Error', info: 'Notice' };
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.innerHTML = `
+      <div class="toast-icon-wrap">${icons[type] || icons.info}</div>
+      <div class="toast-content">
+        <div class="toast-title">${titles[type] || 'Notice'}</div>
+        <div class="toast-message">${msg}</div>
+      </div>
+      <button class="toast-close-btn" onclick="this.closest('.toast').remove()" aria-label="Dismiss">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    `;
+    container.appendChild(toast);
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateY(6px)';
+      setTimeout(() => toast.remove(), 280);
+    }, 5000);
+  }
+</script>
+
+</body>
+</html>

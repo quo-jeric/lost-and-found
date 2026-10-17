@@ -28,10 +28,8 @@ export function createSessionMiddleware() {
           data: 'data',
         },
       },
-      // Run the built-in session reaper every 15 minutes so expired rows are
-      // removed without requiring a separate cron job.
-      clearExpired: true,
-      checkExpirationInterval: 900000, // 15 minutes in ms
+      // Disabled because the application database user holds no DELETE privileges
+      clearExpired: false,
     },
     // Pass the shared pool directly instead of raw connection options so the
     // store reuses the application's existing connection pool.

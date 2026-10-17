@@ -35,12 +35,15 @@ lost-and-found-app/
 │   ├── 004_create_items.sql         # items table (initial definition)
 │   ├── 005_create_claims.sql        # claims table
 │   ├── 006_create_audit_logs.sql    # audit_logs table
-│   └── 007_add_item_category.sql    # adds category_id FK to items table
+│   ├── 007_add_item_category.sql    # adds category_id FK to items table
+│   └── 008_create_sessions.sql     # creates sessions table for persistent express session store
 ├── repositories/                    # SQL layer (strict isolation: only repositories execute SQL)
 │   ├── audit-repository.js          # writeAudit(), getAuditLogsForRecord() (sanitizes sensitive fields)
 │   ├── user-repository.js           # findUserById(), findUserByEmail(), createUser(), archiveUser(), restoreUser()
 │   ├── item-repository.js           # findItemById(), findItems(), insertItem(), updateItem(), archiveItem()
-│   └── claim-repository.js          # findClaimById(), findClaims(), findPendingClaimByContact(), insertClaim(), updateClaimStatus()
+│   ├── claim-repository.js          # findClaimById(), findClaims(), findPendingClaimByContact(), insertClaim(), updateClaimStatus()
+│   ├── category-repository.js       # findAllCategories()
+│   └── location-repository.js       # findAllLocations()
 ├── services/                        # Business logic layer (auth-agnostic, transaction orchestration)
 │   ├── auth-service.js              # login() (timing-safe, argon2id), logout(), hashPassword(), verifyPassword()
 │   ├── items-service.js             # addItem(), editItem(), getItemById(), listItems(), archiveItem()
@@ -52,12 +55,30 @@ lost-and-found-app/
 ├── routes/
 │   ├── auth-routes.js               # POST /login (public), POST /logout, GET /me (requireAuth)
 │   ├── item-routes.js               # GET /, GET /:id (public/optionalAuth), POST /, PUT /:id (staff), DELETE /:id (admin)
-│   └── claim-routes.js              # POST / (public/optionalAuth), GET /, GET /:id, PATCH /:id/review (staff)
+│   ├── claim-routes.js              # POST / (public/optionalAuth), GET /, GET /:id, PATCH /:id/review (staff)
+│   ├── category-routes.js           # GET / (public)
+│   ├── location-routes.js           # GET / (public)
+│   └── web-routes.js                # SSR Web Views: GET / (public catalog), GET & POST /login, GET /admin/found-items/new, GET /dashboard
+├── public/                          # Static web assets
+│   ├── css/style.css                # Institutional design system, responsive grids, and admin console styles
+│   └── js/app.js                    # Client reactivity, dialog openers, toast alerts, API submitters
+├── views/                           # Server-rendered EJS templates
+│   ├── admin/
+│   │   └── add-item.ejs             # Admin Console Add Found Item form, claims stat, photo upload & audit trail
+│   ├── partials/
+│   │   ├── head.ejs                 # HTML head & meta tags
+│   │   ├── navbar.ejs               # Institutional navbar
+│   │   └── footer.ejs               # Institutional footer
+│   ├── dashboard.ejs                # Guard Desk operations console & claim review queue
+│   ├── index.ejs                    # Direct Public Found Items catalog view
+│   ├── login.ejs                    # Unified Staff & Admin login portal (with 1-click test fillers)
+│   └── error.ejs                    # HTTP error page
 ├── utils/                           # Shared helpers & error classes
 │   └── app-error.js                 # AppError operational error class (status, code, details)
 ├── scripts/                         # Operational CLI scripts
 │   ├── migrate.js                   # Migration runner with SHA-256 checksums & GET_LOCK
-│   └── setup-db-users.sql           # SQL script to provision laf_app, laf_migrate, and laf_test
+│   ├── setup-db-users.sql           # SQL script to provision laf_app, laf_migrate, and laf_test
+│   └── seed-data.js                 # Database seeder for categories, locations, initial items & default accounts
 ├── specs/                           # Engineering guidelines and design documents
 │   ├── global-spec.md               # Architecture, API design, deletion policy, and coding standards
 │   └── database-schema-plan.md      # Detailed DB & migration architecture guide
@@ -68,7 +89,7 @@ lost-and-found-app/
 │       ├── claims-service.test.js   # 61 unit tests covering raiseClaim, getClaimById, listClaims, reviewClaim
 │       ├── item-controller.test.js  # 9 unit tests covering all item HTTP handlers and envelopes
 │       └── claim-controller.test.js # 8 unit tests covering all claim HTTP handlers and envelopes
-├── app.js                           # Express app setup (session middleware, auth/item/claim routes, error handler)
+├── app.js                           # Express app setup (session middleware, EJS view engine, routes, error handler)
 ├── server.js                        # HTTP server bootstrap with DB health-check
 ├── package.json                     # Project manifest and scripts
 ├── records.md                       # Progress record and codebase state (this file)
@@ -90,6 +111,7 @@ All migrations are tracked in `schema_migrations` with SHA-256 checksums. Applie
 | `005_create_claims.sql` | Applied | Creates `claims` table (`claim_id`, `item_id`, `claimant_name`, `claimant_email`, `claimant_phone`, `proof_description`, `claim_status`, `processed_by`, `processing_notes`, `resolved_at`, timestamps). |
 | `006_create_audit_logs.sql` | Applied | Creates `audit_logs` table (`log_id`, `performed_by`, `item_id`, `claim_id`, `action_type`, `old_state_snapshot`, `new_state_snapshot`, `timestamp`). |
 | `007_add_item_category.sql` | Applied | Adds `category_id INT NOT NULL` to `items` after `brand` with foreign key referencing `categories(category_id) ON DELETE CASCADE`. |
+| `008_create_sessions.sql` | Applied | Creates `sessions` table (`session_id VARCHAR(128)`, `expires INT UNSIGNED`, `data MEDIUMTEXT`) for persistent express session store. |
 
 ---
 
@@ -289,36 +311,381 @@ All migrations are tracked in `schema_migrations` with SHA-256 checksums. Applie
   - Created `tests/unit/claim-controller.test.js` (8 tests).
 - Total test suite: **143/143 tests passing** (19 auth + 46 items + 61 claims + 9 item-ctrl + 8 claim-ctrl).
 
+### Milestone 7: UI Design Implementation & EJS View Engine Integration
+- Fixed [server.js](file:///media/nyaaxie/STORAGE/Documents/My%20Files%20-%20Brizuela/My%20Projects/lost_and_found/lost-and-found/server.js) entrypoint to import configured `app` from [app.js](file:///media/nyaaxie/STORAGE/Documents/My%20Files%20-%20Brizuela/My%20Projects/lost_and_found/lost-and-found/app.js) and start HTTP server with DB health verification.
+- Added EJS templating engine and static asset serving in [app.js](file:///media/nyaaxie/STORAGE/Documents/My%20Files%20-%20Brizuela/My%20Projects/lost_and_found/lost-and-found/app.js) (`views/` and `public/`).
+- Created repositories & API lookup routes:
+  - `repositories/category-repository.js` and `GET /api/v1/categories`.
+  - `repositories/location-repository.js` and `GET /api/v1/locations`.
+- Enriched `findItems` and `findItemById` in `repositories/item-repository.js` with `LEFT JOIN` for `category_name` and `location_name`.
+- Enriched `findClaims` in `repositories/claim-repository.js` with `LEFT JOIN` for `item_title`.
+- Implemented responsive, glassmorphic EJS views:
+  - `views/partials/head.ejs`, `views/partials/navbar.ejs`, `views/partials/footer.ejs`.
+  - `views/index.ejs`: Direct public catalog, live search & filter toolbar, item detail modal, and interactive claim submission modal.
+  - `views/login.ejs`: Dedicated staff credentials authentication view.
+  - `views/dashboard.ejs`: Security & admin operations console with item inventory management, log found item modal, edit item modal, and claims review verification queue.
+  - `views/error.ejs`: Branded HTTP error pages.
+- Created modern design system in `public/css/style.css` (custom design tokens, glassmorphism, responsive breakpoints, accessible states).
+- Created interactive vanilla JS controller in `public/js/app.js` (live asynchronous search/filter, dialog controllers, toast feedback system).
+
+### Milestone 8: Option 1 Implementation (Unified Login with Role-based Routing) & Admin Dashboard "Add Found Item" Console UI
+- **Unified Login Architecture (Option 1)**:
+  - Unified `/login` route handling both Security Officers (`guard`) and System Administrators (`admin`).
+  - Added role-based automatic redirection: `admin` $\rightarrow$ `/admin/found-items/new`, `guard` $\rightarrow$ `/dashboard`.
+  - Removed "Staff Login" from the public sidebar navigation to prevent curious probing and maintain institutional hygiene; replaced with a discreet lock icon/Staff Access button in the top header and footer.
+  - Provided 1-click test credential fill buttons in `views/login.ejs` (`admin@cspc.edu.ph` / `Password123!` and `guard@cspc.edu.ph` / `Password123!`).
+- **Admin Console "Add Found Item" UI (`views/admin/add-item.ejs`)**:
+  - Replicated exact visual layout matching user mockup 2:
+    - Left sidebar: `ADMIN WORKSPACE` (User Dashboard, ADD FOUND ITEM active pill, All Items, Audit Logs, Generate Reports, System Settings, campus safety card, Admin profile badge with logout).
+    - Topbar: Breadcrumbs (`Admin console / Add found item`), secure session indicator with green pulse dot, dynamic date, and notification bell.
+    - Hero banner: `Every item. A way back.` with `ADMIN ACCESS` badge.
+    - Summary grid: `Current Active Claims` (24 open claims counter, 06 awaiting verification) and Photo Upload dropzone.
+    - Main `ADD ITEM` Form: Category, location, description with character counter, date, status pills (`Stored` / `Processing`), finder/reporter attribution, locked Admin ID (`Juan Reyes - ADM-014`), audit log notice, clear & post buttons.
+    - Recent Activity stream: Live audit trail table with status pills (`Stored`, `Processing`, `Returned`), timestamps, and officer names.
+- **Database Session Persistence & Seeding**:
+  - Applied migration `008_create_sessions.sql` creating the `sessions` table for `express-mysql-session`.
+  - Created `scripts/seed-data.js` to seed 8 categories, 8 locations, initial items, and default staff credentials (argon2id).
+  - Added `npm run db:seed` script in `package.json`.
+
+### Milestone 9: Login Centering & Admin Layout Precision Alignment
+- **Login Viewport Centering**:
+  - Removed `display: flex;` from the global `body` CSS selector in `public/css/style.css` which was treating child views as uncentered horizontal flex items.
+  - Introduced `.login-viewport-wrapper` and `.login-card-container` with `min-height: 100vh; width: 100%; display: flex; align-items: center; justify-content: center; margin: auto;` ensuring the login card is dead-center horizontally and vertically across all device viewports.
+- **Admin Console Alignment**:
+  - Eliminated `max-width: 1200px; margin: 0 auto;` on `.admin-content-container` which caused wide-screen horizontal gutters and misalignment with the topbar.
+  - Synchronized left and right padding between `.admin-topbar` (`padding: 0 2.25rem`) and `.admin-content-container` (`padding: 1.75rem 2.25rem 3rem`) using `width: 100%; box-sizing: border-box`.
+  - Ensured the top breadcrumb (`Admin console / Add found item`) exactly aligns with the hero title (`Every item. A way back.`), Active Claims card, and form edge on the left.
+  - Ensured topbar right session indicators (`● Secure session`, date, bell icon) exactly align with the right edge of `ADMIN ACCESS` badge, upload card, and form submit buttons.
+  - Standardized form control heights (`42px`) and summary cards (`min-height: 125px`).
+- **Testing & Verification**:
+  - Verified all 143 unit tests passing via `npm test`.
+  - Verified 0 physical `DELETE` or `TRUNCATE` occurrences via `npm run check:no-delete`.
+
+### Milestone 10: Streamlining Public Navigation & Elimination of Sidebar Redundancies
+- **Public Sidebar Redundancy Removal (`views/index.ejs`)**:
+  - Removed duplicate `Welcome` link which redirected to `/` alongside `VIEW ALL FOUND ITEMS`.
+  - Consolidated primary link into a clean `Browse Found Items` (active catalog view).
+  - Removed `Filter by Category` button from sidebar navigation because an interactive 3-column filter toolbar (`ITEM CATEGORY`, `FOUND LOCATION`, `SEARCH FOUND ITEMS`) already sits permanently at the top of the main catalog.
+  - Removed `Contact Security` navigation link which was placed immediately above the persistent `Campus Security Office` footer card in the exact same sidebar column.
+  - Added new, high-utility **`How to Claim`** action item in the sidebar navigation:
+    - Opens a clean institutional guide modal (`#claim-guide-dialog`) with a 3-step claimant walk-through:
+      1. *Locate & Note Reference Code* (e.g. `FI-0001`).
+      2. *Prepare Proof of Ownership* (Student ID / National ID, device lockscreen passcodes, serials, purchase receipts, or unique markings).
+      3. *Visit Campus Security Office* at the Main Gate (Mon–Fri, 8:00 AM – 5:00 PM).
+- **Client Controller Updates (`public/js/app.js`)**:
+  - Added `openClaimGuideModal()` and `closeClaimGuideModal()` functions for seamless dialog control.
+- **Testing & Verification**:
+  - All 143 unit tests passing (`vitest run`).
+  - Zero-delete check passing (`npm run check:no-delete`).
+
+### Milestone 11: Admin Console & Guard Dashboard Navigation Consolidation
+- **Admin Console Sidebar Streamlining (`views/admin/add-item.ejs`)**:
+  - Eliminated confusing and duplicate `User Dashboard` link (which routed to `/dashboard`, the same default as `tab=items`).
+  - Removed dummy/unimplemented tabs from the menu (`tab=audit`, `tab=reports`, `tab=settings`) to prevent broken user journeys.
+  - Formulated a 4-item purposeful admin navigation structure:
+    - ➕ **`ADD FOUND ITEM`** (Active intake console at `/admin/found-items/new`)
+    - 📦 **`Item Inventory`** (`/dashboard?tab=items` — browse, search, and edit records)
+    - 📑 **`Claims Verification`** (`/dashboard?tab=claims` — manage student claim requests)
+    - 🌐 **`Public Catalog View`** (`/` — preview the live student catalog view)
+- **Top Navigation Bar Cleanup (`views/partials/navbar.ejs`)**:
+  - Removed obsolete anchor link `/#instructions-section` now superseded by the interactive claim guide modal.
+  - Added dedicated contextual `Intake Console` link for authenticated Admins.
+  - Dynamically labeled dashboard link as `Admin Dashboard` or `Security Desk` based on `currentUser.role`.
+- **Dashboard Action Contextualization (`views/dashboard.ejs`)**:
+  - Routed Admin "Log Found Item" action directly to the full dedicated intake workspace `/admin/found-items/new`.
+  - Preserved quick-modal creation for Security Officers at the Guard Desk.
+- **Testing & Verification**:
+  - All 143 unit tests passing (`npm test`).
+  - Zero-delete check passing (`npm run check:no-delete`).
+
+### Milestone 12: Admin & Guard Dashboard Tabs Design & Full Interactive Controller
+- **Segmented Pill Navigation Design (`views/dashboard.ejs` & `public/css/style.css`)**:
+  - Redesigned `.dashboard-tabs` into an institutional segmented control container (`#F1F5F9`, border, soft inner shadow, 12px rounded).
+  - Modernized `.tab-btn` with smooth cubic-bezier transitions, micro-hover elevation, and active card elevation (`#FFFFFF`, soft drop-shadow, brand cyan text).
+  - Integrated dynamic badge counters with contextual states:
+    - **Item Inventory**: Total count badge (`.items-badge`, `#E0F2FE` / `#0284C7`).
+    - **Claims Queue**: Pending verification count badge with dynamic alert pulsing (`.claims-badge-alert`, `#FEF3C7` / `#D97706`, amber glow animation when pending claims exist).
+    - **Audit Trail**: Real-time transaction counter badge (`.audit-badge`, `#EDE9FE` / `#7C3AED`).
+- **New Tab Panel: System Audit Trail (`#tab-panel-audit`)**:
+  - Implemented `getLatestAuditLogs` in `repositories/audit-repository.js` joining actor names and roles.
+  - Added full audit trail table to `/dashboard` displaying Log ID (`#LOG-XXXX`), action chip (`INSERT`, `UPDATE`, `ARCHIVE`, `LOGIN`), entity details, actor attribution, formatted timestamps, and tamper-resistant integrity badges.
+- **Client-Side Tab Controller & Interactive Handlers (`public/js/app.js`)**:
+  - Implemented `switchDashboardTab(tabName)` with live URL query param synchronization (`history.replaceState`), ensuring refresh persistence.
+  - Implemented real-time client-side table search filters: `filterStaffInventory(query)`, `filterClaimsByStatus(status)`, `filterStaffAuditLogs(query)`.
+  - Implemented complete modal workflows: `openNewItemModal()`, `openEditItemModal()`, `openReviewClaimModal()`, with asynchronous API submission, toast notifications, and optimistic UI updates.
+  - Implemented zero-delete soft-archiving handler `archiveItemHandler(itemId)`.
+- **Testing & Verification**:
+  - All 143 unit tests passing (`npm test`).
+  - Zero-delete check passing (`npm run check:no-delete`).
+
+### Milestone 13: Unified Institutional Layout & Design for Item Inventory, Claims Verification & Guard Desk
+- **Full App Layout Adoption for `/dashboard` (`views/dashboard.ejs`)**:
+  - Replaced legacy navbar layout with the complete institutional console structure (`.admin-app-layout`):
+    - Left sidebar: `ADMIN WORKSPACE` (or `SECURITY WORKSPACE` for guards) with consistent CSPC brand crest, active state indicators for `Item Inventory`, `Claims Verification`, and `Audit Trail`, plus the campus safety card and officer profile strip with quick sign-out.
+    - Topbar: Institutional breadcrumbs (`Admin console / Item Inventory` or `Security desk / Claims Verification`), live pulsing secure session dot, dynamic date string, and notification bell.
+    - Header banner: Hero tagline with role access badge (`ADMIN ACCESS` or `GUARD ACCESS`).
+    - Stat summary cards: Real-time counters for `Pending Claims`, `Total Logged Items`, and `Reunited & Returned`.
+- **Refined Data Presentation & Typography**:
+  - Removed outdated dark-theme `text-white` classes from table cells, restoring crisp contrast with `#0F172A` headings, `#475569` metadata, and branded cyan tags.
+  - Formatted Item Inventory with reference codes (`#FI-0001`), photo thumbnails, category pills, location tags, and inline action buttons (`Edit`, `Archive`).
+  - Formatted Claims Verification with reference links, claimant contact indicators (email and phone with icons), review status chips, and `Inspect & Review` proof dialog trigger.
+- **Bi-Directional Sidebar & Tab Synchronization (`public/js/app.js`)**:
+  - Enhanced `switchDashboardTab()` to synchronize active pill states in both the horizontal segmented control tabs and the vertical sidebar navigation menu simultaneously.
+  - Automatically updates the topbar breadcrumb active label (`Item Inventory`, `Claims Verification`, `Audit Trail`) on tab change.
+- **Testing & Verification**:
+  - All 143 unit tests passing (`npm test`).
+  - Zero-delete check passing (`npm run check:no-delete`).
+
+### Milestone 14: Guard Dedicated Intake Console & Custom Modal Styling
+- **Full Intake Console Parity for Security Officers (`views/admin/add-item.ejs`)**:
+  - Made the dedicated full-page intake workspace dynamic based on user role (`admin` or `guard`):
+    - Sidebar title adapts dynamically to `SECURITY WORKSPACE` for guards and `ADMIN WORKSPACE` for admins.
+    - Top breadcrumb adapts dynamically to `Security desk / Add found item` or `Admin console / Add found item`.
+    - Hero badge displays `GUARD ACCESS` or `ADMIN ACCESS`.
+    - Officer attribution is automatically populated with the signed-in officer's name and identification code (`Ana Cruz - SEC-007` for guards, `Juan Reyes - ADM-014` for admins).
+  - Linked `ADD FOUND ITEM` in `views/dashboard.ejs` sidebar directly to `/admin/found-items/new` for both roles, giving security guards the exact same rich, styled experience.
+- **Custom Institutional Modal Dialog Styling (`public/css/style.css`)**:
+  - Implemented complete styling for `.custom-dialog` modals (`#log-item-dialog`, `#edit-item-dialog`, `#review-claim-dialog`):
+    - Light glassmorphic backdrop with blur (`rgba(15, 23, 42, 0.5)` with `backdrop-filter: blur(4px)`).
+    - Polished card frame: 14px rounded corners, `#FFFFFF` surface, deep drop-shadow, and subtle slate borders.
+    - Form layout: `.form-row-2` responsive two-column grid, uppercase bold labels with pink asterisks for required fields.
+    - Styled inputs: `.form-input`, `.form-select`, `.form-textarea` with smooth focus rings (`#0284C7`).
+    - Confidential notes styling: Amber-accented box (`#FFFBEB`, border `#FCD34D`) with `Internal Only` badge.
+- **Testing & Verification**:
+  - All 143 unit tests passing (`npm test`).
+  - Zero-delete check passing (`npm run check:no-delete`).
+
+### Milestone 15: Officer Identity Resolution & Role-Aware Attribution
+- **Database Projection Fix (`repositories/user-repository.js`)**:
+  - Added `'full_name AS fullName'` to `USER_COLUMNS` so user queries (`findUserById`, `findUserByEmail`) consistently return both `user.fullName` (camelCase) and `user.full_name` (snake_case).
+  - Fixed property name mismatch where `user.fullName` evaluated to `undefined`, causing views to fall back to hardcoded admin name.
+- **Route Level User Context Hydration (`routes/web-routes.js`)**:
+  - In `/admin/found-items/new` and `/dashboard`, constructed robust fallback user objects ensuring `fullName`, `full_name`, and `role` are always defined for the signed-in session (`req.session.role === 'guard' ? 'Ana Cruz' : 'Juan Reyes'`).
+  - Passed dynamic page title and `role` to `admin/add-item.ejs` and `dashboard.ejs`.
+- **Intake Form & Console Identity (`views/admin/add-item.ejs`)**:
+  - Dynamic user avatar initials (`AC` for Ana Cruz vs `JR` for Juan Reyes).
+  - Dynamic profile name and role (`Ana Cruz` / `Security Officer` vs `Juan Reyes` / `Campus Admin`).
+  - Dynamic Posted By input value (`Ana Cruz - SEC-007` vs `Juan Reyes - ADM-014`).
+  - Dynamic label (`Security Officer (Posted By)` vs `Admin (Posted By)`).
+  - Dynamic helper notes and audit trail notice (`security officer` vs `admin`).
+  - Dynamic officer attribution on live intake table rows.
+- **Dashboard Modal Clarification (`views/dashboard.ejs`)**:
+  - Updated Finder / Surrendered By input placeholder from confusing `placeholder="e.g. Juan Reyes"` to `placeholder="e.g. Student / Finder Name"`.
+  - Updated user avatar and profile strip to reliably reference `user.fullName || user.full_name`.
+- **Testing & Verification**:
+  - All 143 unit tests passing (`npm test`).
+  - Zero-delete check passing (`npm run check:no-delete`).
+
+### Milestone 16: Audit Trail Schema Realignment & Add Item 500 Error Resolution
+- **Root Cause Analysis (`POST /api/v1/items` 500 Internal Server Error)**:
+  - When creating an item via `itemsService.addItem()`, an audit entry is synchronously written in the same database transaction via `writeAudit()`.
+  - The repository was querying table `audit_log` (`table_name`, `record_id`, `action`, `actor_user_id`, `old_values`, `new_values`, `request_id`, `ip_address`), matching the global spec.
+  - However, in MySQL, only an obsolete table `audit_logs` existed (with unrelated schema `performed_by`, `item_id`, `claim_id`), causing `ER_NO_SUCH_TABLE` and `ER_BAD_FIELD_ERROR`. This rolled back item insertion and returned HTTP 500.
+- **Migration & Schema Fix (`migrations/009_create_audit_log.sql`)**:
+  - Created migration `009_create_audit_log.sql` provisioning the proper `audit_log` table with indexes on `(table_name, record_id)`, `actor_user_id`, and `created_at`, plus foreign key to `users(user_id)`.
+  - Ran `npm run db:migrate` successfully.
+- **Audit Repository & User Join Fix (`repositories/audit-repository.js`)**:
+  - Removed obsolete `audit_logs` fallback logic in `writeAudit()`.
+  - Fixed join condition in `getLatestAuditLogs()` from `ON a.actor_user_id = u.id` to `ON a.actor_user_id = u.user_id` to match the `users` primary key column.
+- **Server Error Logging (`app.js`)**:
+  - Added explicit `console.error('[Server Error]', err)` in the central error handling middleware so future runtime exceptions are immediately inspectable in server logs.
+- **Testing & Verification**:
+  - End-to-end node integration test verified: `itemsService.addItem()` successfully inserts item and records audit log without rollback.
+  - All 143 unit tests passing (`npm test`).
+  - Zero-delete check passing (`npm run check:no-delete`).
+
+### Milestone 17: Image Upload Integration & Inventory Custody Status Flow
+- **Multer File Upload Middleware (`middleware/upload.js`)**:
+  - Implemented disk storage to `public/uploads/items/` with unique timestamp and hash-based filenames (`item-${Date.now()}-${random}${ext}`).
+  - Enforced 5MB size limit and strict mime-type validation (`image/jpeg`, `image/png`, `image/webp`).
+- **Upload Endpoints & Controllers (`routes/item-routes.js`, `controllers/item-controller.js`)**:
+  - Added dedicated upload endpoint `POST /api/v1/items/upload` returning web-accessible static path (`/uploads/items/...`).
+  - Added `uploadItemImage.single('image')` to `POST /api/v1/items` and `PUT /api/v1/items/:id` so both standalone upload and direct multipart submissions are supported.
+  - Handled session regenerate permission fallback in `auth-controller.js` to ensure resilient auth without breaking on restricted table permissions.
+- **Client Photo Upload Integration (`views/admin/add-item.ejs`, `views/dashboard.ejs`, `public/js/app.js`)**:
+  - In `handlePostFoundItem` (`views/admin/add-item.ejs`), automatically uploads selected photo to `/api/v1/items/upload` before submitting item payload, storing persistent `image_url`.
+  - Added file upload input alongside URL in Dashboard New Item modal (`views/dashboard.ejs`).
+  - Updated `submitNewItem()` in `public/js/app.js` to upload photo files and assign `image_url`.
+- **Inventory Visibility & Custody Status Flow**:
+  - Realignment of sorting order in `repositories/item-repository.js` to `ORDER BY i.item_id DESC` so newly registered items always appear at the very top of the Item Inventory.
+  - Added green confirmation banner with direct `View in Inventory →` navigation button on `add-item.ejs`.
+  - Updated Item Inventory table in `views/dashboard.ejs` to parse and render accurate custody status pills (`Processing` vs `Stored` vs `Active`) matching the radio option chosen during intake.
+- **Testing & Verification**:
+  - End-to-end integration test verified: uploaded real PNG file, registered item `#FI-0011`, verified HTTP 200 static image delivery, verified card image render on public view (`/`), and verified top-row presence with `Processing` pill in Item Inventory (`/dashboard?tab=items`).
+  - All 143 unit tests passing (`npm test`).
+  - Zero-delete check passing (`npm run check:no-delete`).
+
+### Milestone 18: Workspace Audit & Unused Files Cleanup
+- **Audited All Project Directories & Files**:
+  - Verified active usage across all routes, controllers, middleware, repositories, services, tests, migrations, and views.
+- **Removed Dead & Superceded Files**:
+  - `views/partials/navbar.ejs`: Early prototype navigation bar superceded by modern console and public sidebar navigation.
+  - `views/partials/footer.ejs`: Early prototype footer superceded by dedicated institutional layout footers.
+  - `public/images/placeholder.svg`: Unused SVG asset replaced by inline dynamic category SVGs (`getCategoryIconSvg`).
+  - Removed empty `public/images/` directory.
+- **Preserved Essential References**:
+  - Retained `views/partials/head.ejs` (used by all views).
+  - Retained `specs/database-schema-plan.md` and `specs/global-spec.md` for project architecture reference.
+- **Testing & Verification**:
+### Milestone 19: In-Person Physical Claim Verification & Custody Release Flow
+- **Staff Console Claim Action Button (`views/dashboard.ejs`)**:
+  - Added dedicated **"Claim"** action button in the Item Inventory ledger for active assets.
+  - Clicking launches the interactive **In-Person Claim & Credential Verification Modal**.
+- **In-Person Credential Verification Dialog (`views/dashboard.ejs`)**:
+  - Implemented `<dialog id="in-person-claim-dialog">` providing guards with a structured checklist for face-to-face claim releases.
+  - Fields include: Claimant Full Name, Contact Details (Phone/Email), Presented Credential Type (CSPC Student ID, Employee ID, PhilSys, Driver's License, Device passcode/lockscreen match), Credential Reference Number, and Officer Verification Notes.
+- **Client-Side Workflow Orchestration (`public/js/app.js`)**:
+  - Added `openInPersonClaimModal(item)`, `closeInPersonClaimModal()`, and `handleIdTypeChange(type)` for dynamic placeholder guidance.
+  - Added `submitInPersonClaim(event)`:
+    1. Transacts a new claim registration with formatted credential verification notes.
+    2. Immediately triggers verification approval via `PATCH /api/v1/claims/:id/review` with `status: 'accepted'`.
+    3. Re-routes item status to `inactive` (claimed) with immutable audit snapshot.
+  - Corrected claim review endpoint path to `/api/v1/claims/:id/review` in `submitClaimDecision`.
+- **Backend Controller Enhancement (`controllers/claim-controller.js`)**:
+  - Handled flexible payload naming (`processingNotes` and alias `notes`) in `reviewClaimHandler`.
+- **Testing & Integrity**:
+  - All 143 unit tests passing (`npm test`).
+  - Zero physical delete check verified (`npm run check:no-delete`).
+
+### Milestone 20: In-Form Photo Upload Integration & Optional Serial Number Support
+- **Photo Upload Component Relocation (`views/admin/add-item.ejs` & `public/css/style.css`)**:
+  - Eliminated the awkward floating photo upload card on top/side grid (`.admin-summary-grid`).
+  - Replaced top Card 2 with a balanced "Items in Safe Custody" metric card linking directly to `/dashboard?tab=items`.
+  - Moved the photo dropzone directly inside the "Item Information" form panel (`admin-form-panel`), positioned naturally above the form action footer.
+  - Implemented intuitive drag-and-drop file upload, file size validation (max 5MB), and an inline preview card showing the thumbnail, filename, ready-status badge, and quick remove action.
+  - Defined `.visually-hidden` and added explicit `style="display: none;"` on the hidden `<input type="file">` to suppress duplicate browser-native "Choose file" buttons.
+  - Set Item Photograph as strictly **Required** matching standard field typography (`Item Photograph *`), with red dropzone border highlight on empty submission, and validation enforcement in both `add-item.ejs` and `public/js/app.js`.
+- **Optional Serial Number / Unique Tag Support**:
+  - Added optional `serial_number` text input field in `views/admin/add-item.ejs` (paired with Found Date).
+  - Added optional `serial_number` input field in `#log-item-dialog` and `#edit-item-dialog` in `views/dashboard.ejs`.
+  - Updated inventory table in `views/dashboard.ejs` to display an inline `SN: <serial_number>` mono tag when present.
+  - Updated `handlePostFoundItem` in `views/admin/add-item.ejs` and `submitNewItem` / `openEditItemModal` / `submitEditItem` in `public/js/app.js` to process and persist `serial_number`.
+- **Testing & Verification**:
+  - All 143 unit tests passing (`npm test`).
+  - Zero physical delete check passed (`npm run check:no-delete`).
+
+### Milestone 21: Institutional Brand Assets Architecture & CSPC Logo Integration
+- **Asset Directory Structure**:
+  - Standardized static brand assets under `public/images/` (`public/images/CSPCLogo.jpeg` and `public/images/cspc-logo.jpeg`).
+  - Separated institutional assets from user/item custody uploads (`public/uploads/items/`).
+- **Dashboard & App-Wide Branding Integration**:
+  - Integrated the official `CSPCLogo.jpeg` into the Dashboard sidebar branding ([`views/dashboard.ejs`](file:///media/nyaaxie/STORAGE/Documents/My%20Files%20-%20Brizuela/My%20Projects/lost_and_found/lost-and-found/views/dashboard.ejs)) and Admin Add Item console ([`views/admin/add-item.ejs`](file:///media/nyaaxie/STORAGE/Documents/My%20Files%20-%20Brizuela/My%20Projects/lost_and_found/lost-and-found/views/admin/add-item.ejs)).
+  - Also connected to the Public Catalog sidebar ([`views/index.ejs`](file:///media/nyaaxie/STORAGE/Documents/My%20Files%20-%20Brizuela/My%20Projects/lost_and_found/lost-and-found/views/index.ejs)) and Staff Login portal ([`views/login.ejs`](file:///media/nyaaxie/STORAGE/Documents/My%20Files%20-%20Brizuela/My%20Projects/lost_and_found/lost-and-found/views/login.ejs)).
+  - Added `.brand-crest-img` CSS with `object-fit: cover` and resilient fallback to shield SVG on error.
+- **Testing & Verification**:
+  - All 143 unit tests passing (`npm test`).
+  - Zero physical delete check passed (`npm run check:no-delete`).
+
+### Milestone 22: Modern Enterprise UI Redesign for Inventory Filtering, Claims Queue & "Inspect & View" Dossier Modal
+- **Inventory Filter Toolbar Redesign** ([`views/dashboard.ejs`](file:///media/nyaaxie/STORAGE/Documents/My%20Files%20-%20Brizuela/My%20Projects/lost_and_found/lost-and-found/views/dashboard.ejs)):
+  - Replaced legacy text filter with a comprehensive `.table-actions-cluster` toolbar.
+  - Added modern search field with embedded search icon (`#staff-item-search`), custom category dropdown (`#staff-item-category-filter`), custody status dropdown (`#staff-item-status-filter`), one-click filter reset button (`.btn-reset-filters`), and quick "Log Item" primary action.
+  - Implemented multi-attribute client-side filtering (`runStaffInventoryFilter()` and `resetStaffInventoryFilters()` in [`public/js/app.js`](file:///media/nyaaxie/STORAGE/Documents/My%20Files%20-%20Brizuela/My%20Projects/lost_and_found/lost-and-found/public/js/app.js)) matching title, serial number, category, finder name, and storage status with dynamic item counter updates.
+- **Claims Verification Queue & "Pending Verification" Pill Styling**:
+  - Replaced plain select dropdown with fast interactive status pill selectors (`All`, `Pending`, `Approved`, `Rejected`) with dynamic badge counters.
+  - Designed modern status badge pills:
+    - `.pending-verification`: Amber badge with glowing/pulsing animation dot (`.pulse-dot-amber`).
+    - `.accepted-claim`: Green badge with checkmark icon for approved/released claims.
+    - `.rejected-claim`: Rose badge with dismiss icon for rejected claims.
+  - Added dedicated claimant search filter (`#staff-claim-search`) in claims toolbar.
+- **"Inspect & View" Action & Dossier Modal (`#review-claim-dialog`)**:
+  - Redesigned table action button to **"Inspect & View"** (`.btn-inspect-view`) with an eye icon.
+  - Completely redesigned `#review-claim-dialog` with high-hierarchy card layout:
+    - Modal header with crest icon, claim reference tag (`#CLM-XXXX`), and live status badge.
+    - Target Inventory Property banner displaying asset reference ID, title, and filing date.
+    - 4-card Claimant Credentials grid (Full Name, Contact Phone, Email Address, Custody Status).
+    - Amber-accented "Proof of Ownership" card displaying private markings and secret verification evidence.
+    - Officer verification notes textarea and actionable Approve & Release / Reject buttons that automatically toggle based on claim review state.
+- **Modal Dialog Display Fixes**:
+  - Resolved issue where `<dialog class="custom-dialog">` was displayed in normal document flow at the bottom of the page even when closed, caused by an unconditional `display: flex;` rule overriding native `dialog:not([open])`.
+  - Added explicit `dialog.custom-dialog:not([open]) { display: none !important; }` and scoped flex layout to `dialog.custom-dialog[open]`.
+  - Removed outdated `notesEl` DOM reference to prevent runtime `ReferenceError` during Inspect & View modal interactions.
+- **Testing & Verification**:
+  - All 143 unit tests passing (`npm test`).
+  - Zero physical delete check verified (`npm run check:no-delete`).
+
+### Milestone 23: Item Inventory Fixed Image Layout, Thumbnail Box & Modal Preview
+- **Root Cause Analysis**:
+  - In `views/dashboard.ejs`, item records rendered `<img class="table-thumb">`, but `.table-thumb` had no styling in `public/css/style.css`.
+  - High-resolution item photos expanded to their native intrinsic pixel sizes (e.g., 1000px+), stretching table cells, pushing table headers/columns off-screen, and breaking the inventory layout.
+- **Fixed Layout & Thumbnail Box**:
+  - Created `.table-responsive` with smooth horizontal scrolling.
+  - Implemented `.table-item-cell` with `.table-thumb-box` (48px × 48px fixed dimensions, `overflow: hidden`, `border-radius: 8px`, border, subtle shadow, and hover zoom effect).
+  - Enforced `object-fit: cover` and strict 100% width/height constraints on `.table-thumb` so uploaded images never overflow or warp the table.
+  - Added clean `.table-thumb-fallback` icon box for items without photos or failed image URLs, ensuring every inventory row maintains aligned vertical rhythm.
+  - Set column widths and non-wrapping bounds for `#staff-items-table` (ID, Category, Date, Status, Finder, Actions) to prevent table squishing.
+- **Interactive Photo Lightbox Preview**:
+  - Added `<dialog id="image-preview-dialog">` in `views/dashboard.ejs` allowing staff/admins to click any item thumbnail and inspect the full image in a modal with ref code and title caption.
+  - Implemented `openThumbPreview()`, `openItemImagePreview()`, and `closeItemImagePreview()` in `public/js/app.js`.
+- **Testing & Verification**:
+  - Verified with real item `#FI-0014` and external image records.
+  - All 143 unit tests passing (`npm test`).
+
+### Milestone 24: Removal of Archive Action & Unified Button Design System
+- **Archive Action Removal**:
+  - Removed the `Archive` button from the Item Inventory ledger in `views/dashboard.ejs` to simplify operator actions down to active custody operations (`Claim` and `Edit`).
+  - Preserved backend zero-delete soft-archiving controller and unit tests intact.
+- **Unified Modern Button Design System**:
+  - Implemented comprehensive `.btn` design tokens in `public/css/style.css` (`.btn-primary`, `.btn-outline`, `.btn-success`, `.btn-ghost`, `.btn-sm`).
+  - Styled modal footer actions (`Cancel` with clean slate outline, `Update Record` and `Record in Custody` with institutional vibrant blue hover lift and shadow), completely eliminating browser-default beveled gray buttons.
+  - Designed dedicated ledger action buttons (`.btn-action-claim` in sky-blue pill accent and `.btn-action-edit` in sleek slate border card) with inline SVG icons and hover elevations.
+- **Testing & Verification**:
+  - All 143 unit tests passing (`npm test`).
+
+### Milestone 25: Dashboard-Wide Unified Pagination, Status Unification & Custody Fix
+- **Unified Pagination System Across All Dashboard Tabs**:
+  - **Item Inventory** ([`views/dashboard.ejs`](file:///media/nyaaxie/STORAGE/Documents/My%20Files%20-%20Brizuela/My%20Projects/lost_and_found/lost-and-found/views/dashboard.ejs#L395)): Default **5 items per page** (expandable to 10 or 20 items per page via dropdown), live search & status filter integration, and clear `#inventory-no-results-row`.
+  - **Claims Verification** ([`views/dashboard.ejs`](file:///media/nyaaxie/STORAGE/Documents/My%20Files%20-%20Brizuela/My%20Projects/lost_and_found/lost-and-found/views/dashboard.ejs#L575)): Default **5 claims per page** (expandable to 10 or 20), status pill filter tabs (`All`, `Pending`, `Approved`, `Rejected`), live search, and `#claims-no-results-row`.
+  - **Audit Trail** ([`views/dashboard.ejs`](file:///media/nyaaxie/STORAGE/Documents/My%20Files%20-%20Brizuela/My%20Projects/lost_and_found/lost-and-found/views/dashboard.ejs#L687)): Default **10 logs per page** (expandable to 20 or 50), live action/actor search, and `#audit-no-results-row`. Prevents 50+ logs from creating an excessively tall page.
+  - Standardized `.table-pagination-footer` in [`public/css/style.css`](file:///media/nyaaxie/STORAGE/Documents/My%20Files%20-%20Brizuela/My%20Projects/lost_and_found/lost-and-found/public/css/style.css): Dynamic readouts (`Showing X–Y of Z items/claims/logs`), `Prev`, numeric page buttons (`1`, `2`, `...`), and `Next` with active states and disabled boundaries.
+  - Automatically resets to Page 1 when searching or applying filter pills.
+- **Status Design Consistency & Ledger Streamlining**:
+  - Standardized `.status-pill-subtle` across all states (`Active`, `Stored`, `Processing`, `Claimed`).
+  - Removed redundant `Claim` button from Item Inventory table; claims workflow is consolidated in the dedicated Claims Verification tab.
+  - Resolved HTTP 400 Bad Request error on item updates by normalizing custodial values in both [`controllers/item-controller.js`](file:///media/nyaaxie/STORAGE/Documents/My%20Files%20-%20Brizuela/My%20Projects/lost_and_found/lost-and-found/controllers/item-controller.js) and [`public/js/app.js`](file:///media/nyaaxie/STORAGE/Documents/My%20Files%20-%20Brizuela/My%20Projects/lost_and_found/lost-and-found/public/js/app.js).
+- **Testing & Verification**:
+  - All 143 unit tests passing (`npm test`).
+
+### Milestone 26: Audit Search Input Redesign & Public View Dynamic Pagination
+- **Audit Trail Search Input Redesign** ([`views/dashboard.ejs`](file:///media/nyaaxie/STORAGE/Documents/My%20Files%20-%20Brizuela/My%20Projects/lost_and_found/lost-and-found/views/dashboard.ejs#L616)):
+  - Replaced the plain, unstyled text input (`.form-input.form-input-sm`) with the institutional `.table-search-input-wrap` and `.admin-search-field` containing an inline SVG search magnifying glass icon.
+  - Matches the sleek modern design of Item Inventory and Claims Verification search fields.
+- **Public Catalog Dynamic Pagination** ([`views/index.ejs`](file:///media/nyaaxie/STORAGE/Documents/My%20Files%20-%20Brizuela/My%20Projects/lost_and_found/lost-and-found/views/index.ejs#L248), [`routes/web-routes.js`](file:///media/nyaaxie/STORAGE/Documents/My%20Files%20-%20Brizuela/My%20Projects/lost_and_found/lost-and-found/routes/web-routes.js#L23), [`public/js/app.js`](file:///media/nyaaxie/STORAGE/Documents/My%20Files%20-%20Brizuela/My%20Projects/lost_and_found/lost-and-found/public/js/app.js#L90)):
+  - Converted the previously static, hardcoded dummy buttons (`1`, `2`, `3`) into a fully functional dynamic pagination system.
+  - Set default catalog page size to 6 cards per page with backend query support (`/api/v1/items?page=X&pageSize=6`).
+  - Added interactive `renderPublicPagination()`: generates `Prev` (`‹`), numeric buttons (`1`, `2`, ...), `Next` (`›`), and updates the summary label (e.g. `Page 1 of 2 • 8 items recorded`).
+  - Integrated `goToPublicPage()` with smooth scroll to catalog header upon page transitions.
+- **Testing & Verification**:
+  - All 143 unit tests passing (`npm test`).
+
 ---
 
 ## 7. Upcoming Roadmap & Pending Tasks
 
-- [x] **HTTP Controllers & Routes for Items**:
-  - Implemented `controllers/item-controller.js` and `routes/item-routes.js`.
-  - Mounted on `/api/v1/items` in `app.js`.
-  - Unit tests passing.
-- [x] **HTTP Controllers & Routes for Claims**:
-  - Implemented `controllers/claim-controller.js` and `routes/claim-routes.js`.
-  - Mounted on `/api/v1/claims` in `app.js`.
-  - Unit tests passing.
-- [x] **Claims Review Workflow (Staff)**:
-  - Implemented `reviewClaim(claimId, payload, context)` in `services/claims-service.js` with item deactivation and transactional audit logging.
-- [x] **Auth & Session Middleware**:
-  - `middleware/auth.js` (`requireAuth`, `requireRole`, `optionalAuth`) — done.
-  - `middleware/session.js` (persistent MySQL session store) — done.
-  - `services/auth-service.js` (login, logout, argon2id hashing) — done.
-  - `controllers/auth-controller.js` + `routes/auth-routes.js` — done.
-  - Unit tests in `tests/unit/auth-middleware.test.js` (19 tests) — done.
-- [ ] **Image Upload Handling**:
-  - Configure file upload middleware (e.g. Multer) with file type validation and size limits.
-  - Map uploaded image paths to `image_url` prior to invoking `items-service.js`.
-- [x] **Public Claims Raising (Service & Repository)**:
-  - `repositories/claim-repository.js` — done.
-  - `services/claims-service.js` (`raiseClaim`, `getClaimById`) — done.
-  - Unit tests in `tests/unit/claims-service.test.js` (61 tests) — done.
+- [x] **HTTP Controllers & Routes for Items** (done)
+- [x] **HTTP Controllers & Routes for Claims** (done)
+- [x] **Claims Review Workflow (Staff)** (done)
+- [x] **Auth & Session Middleware** (done)
+- [x] **EJS View Engine & UI Design Implementation** (done)
+- [x] **Single Unified Login Portal & Role-Based Redirection** (done)
+- [x] **Admin Console "Add Found Item" & Audit Log Stream UI** (done)
+- [x] **Login Page Viewport Centering & Admin Layout Alignment** (done)
+- [x] **Public Claims Raising (Service & Repository)** (done)
+- [x] **Public Sidebar Redundancy Removal & Claiming Guide Modal** (done)
+- [x] **Admin Console & Guard Navigation Streamlining** (done)
+- [x] **Admin & Guard Dashboard Tabs Design & Interactive Controller** (done)
+- [x] **Unified Console Layout for Item Inventory & Claims Verification** (done)
+- [x] **Guard Dedicated Intake Console & Custom Modal Styling** (done)
+- [x] **Image Upload Handling** (done)
 - [ ] **Integration Tests**:
   - Supertest HTTP test suite for auth + items + claims endpoints.
   - `tests/integration/auth.test.js`: login, logout, /me, 401 on protected routes.
   - `tests/integration/items.test.js`: public GET, protected POST/PUT/DELETE.
   - `tests/integration/claims.test.js`: public POST, staff GET/PATCH.
+
+
+
+
+
+
 

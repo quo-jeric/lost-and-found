@@ -1,33 +1,12 @@
 // server.js
 import 'dotenv/config';
-import express from 'express';
 import pool from './config/db.js';
+import { app } from './app.js';
+import config from './config/index.js';
 
-const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = config.port || 3000;
 
-app.use(express.json());
-
-// 1. Health-check endpoint for database testing
-app.get('/', async (req, res) => {
-  try {
-    const [rows] = await pool.query('SELECT 1 + 1 AS solution');
-    res.status(200).json({
-      status: 'ok',
-      dbConnection: 'successful',
-      result: rows[0].solution,
-    });
-  } catch (err) {
-    console.error('Database query failed:', err.message);
-    res.status(500).json({
-      status: 'error',
-      dbConnection: 'failed',
-      error: err.message,
-    });
-  }
-});
-
-// 2. Start server only after verifying database connectivity
+// Start server only after verifying database connectivity
 async function startServer() {
   try {
     // Test database connection on boot

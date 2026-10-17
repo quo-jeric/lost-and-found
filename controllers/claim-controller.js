@@ -87,7 +87,11 @@ export async function reviewClaimHandler(req, res, next) {
       ipAddress: req.ip ?? null,
     };
 
-    const updatedClaim = await claimsService.reviewClaim(req.params.id, req.body ?? {}, context);
+    const payload = {
+      status: req.body?.status,
+      processingNotes: req.body?.processingNotes ?? req.body?.notes,
+    };
+    const updatedClaim = await claimsService.reviewClaim(req.params.id, payload, context);
 
     return res.status(200).json({ data: updatedClaim });
   } catch (err) {

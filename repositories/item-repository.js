@@ -2,22 +2,24 @@ import { writeAudit } from './audit-repository.js';
 
 /** Explicit projection — no SELECT * */
 const ITEM_COLUMNS = [
-  'item_id',
-  'title',
-  'description',
-  'category_id',
-  'color',
-  'brand',
-  'serial_number',
-  'found_at',
-  'location_id',
-  'finder_name',
-  'storage_notes',
-  'logged_by',
-  'item_status',
-  'image_url',
-  'created_at',
-  'updated_at',
+  'i.item_id',
+  'i.title',
+  'i.description',
+  'i.category_id',
+  'i.color',
+  'i.brand',
+  'i.serial_number',
+  'i.found_at',
+  'i.location_id',
+  'i.finder_name',
+  'i.storage_notes',
+  'i.logged_by',
+  'i.item_status',
+  'i.image_url',
+  'i.created_at',
+  'i.updated_at',
+  'c.category_name',
+  'l.location_name',
 ].join(', ');
 
 /**
@@ -29,12 +31,14 @@ const ITEM_COLUMNS = [
  * @returns {Promise<object|null>}
  */
 export async function findItemById(conn, itemId, { includeArchived = false, forUpdate = false } = {}) {
-  const archiveClause = includeArchived ? '' : "AND item_status = 'active'";
+  const archiveClause = includeArchived ? '' : "AND i.item_status = 'active'";
   const lockClause = forUpdate ? 'FOR UPDATE' : '';
   const sql = `
     SELECT ${ITEM_COLUMNS}
-    FROM items
-    WHERE item_id = ? ${archiveClause}
+    FROM items i
+    LEFT JOIN categories c ON i.category_id = c.category_id
+    LEFT JOIN locations l ON i.location_id = l.location_id
+    WHERE i.item_id = ? ${archiveClause}
     LIMIT 1
     ${lockClause}
   `;
@@ -64,33 +68,33 @@ export async function findItems(conn, filters = {}, pagination = {}) {
   const params = [];
 
   if (category_id !== undefined && category_id !== null && category_id !== '') {
-    conditions.push('category_id = ?');
+    conditions.push('i.category_id = ?');
     params.push(Number(category_id));
   }
 
   if (location_id !== undefined && location_id !== null && location_id !== '') {
-    conditions.push('location_id = ?');
+    conditions.push('i.location_id = ?');
     params.push(Number(location_id));
   }
 
   if (item_status && item_status !== 'all') {
-    conditions.push('item_status = ?');
+    conditions.push('i.item_status = ?');
     params.push(item_status);
   }
 
   if (search && typeof search === 'string' && search.trim() !== '') {
-    conditions.push('(title LIKE ? OR brand LIKE ? OR color LIKE ?)');
+    conditions.push('(i.title LIKE ? OR i.brand LIKE ? OR i.color LIKE ?)');
     const term = `%${search.trim()}%`;
     params.push(term, term, term);
   }
 
   if (from_date) {
-    conditions.push('found_at >= ?');
+    conditions.push('i.found_at >= ?');
     params.push(from_date);
   }
 
   if (to_date) {
-    conditions.push('found_at <= ?');
+    conditions.push('i.found_at <= ?');
     params.push(to_date);
   }
 
@@ -100,15 +104,17 @@ export async function findItems(conn, filters = {}, pagination = {}) {
   const pageSize = Math.min(100, Math.max(1, Number(pagination.pageSize) || 20));
   const offset = (page - 1) * pageSize;
 
-  const countSql = `SELECT COUNT(*) AS total FROM items ${whereClause}`;
+  const countSql = `SELECT COUNT(*) AS total FROM items i ${whereClause}`;
   const [countRows] = await conn.query(countSql, params);
   const total = Number(countRows[0]?.total ?? 0);
 
   const fetchSql = `
     SELECT ${ITEM_COLUMNS}
-    FROM items
+    FROM items i
+    LEFT JOIN categories c ON i.category_id = c.category_id
+    LEFT JOIN locations l ON i.location_id = l.location_id
     ${whereClause}
-    ORDER BY found_at DESC, item_id DESC
+    ORDER BY i.item_id DESC
     LIMIT ? OFFSET ?
   `;
   const [rows] = await conn.query(fetchSql, [...params, pageSize, offset]);

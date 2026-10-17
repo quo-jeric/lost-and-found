@@ -148,15 +148,20 @@ export async function findClaims(conn, filters = {}, pagination = {}) {
   const pageSize = Math.min(100, Math.max(1, Number(pagination.pageSize) || 20));
   const offset = (page - 1) * pageSize;
 
-  const countSql = `SELECT COUNT(*) AS total FROM claims ${whereClause}`;
+  const countSql = `SELECT COUNT(*) AS total FROM claims c ${whereClause}`;
   const [countRows] = await conn.query(countSql, params);
   const total = Number(countRows[0]?.total ?? 0);
 
   const fetchSql = `
-    SELECT ${CLAIM_COLUMNS}
-    FROM claims
+    SELECT 
+      c.claim_id, c.item_id, c.claimant_name, c.claimant_email, c.claimant_phone,
+      c.proof_description, c.claim_status, c.processed_by, c.processing_notes,
+      c.resolved_at, c.created_at, c.updated_at,
+      i.title AS item_title
+    FROM claims c
+    LEFT JOIN items i ON c.item_id = i.item_id
     ${whereClause}
-    ORDER BY created_at DESC, claim_id DESC
+    ORDER BY c.created_at DESC, c.claim_id DESC
     LIMIT ? OFFSET ?
   `;
   const [rows] = await conn.query(fetchSql, [...params, pageSize, offset]);

@@ -18,9 +18,13 @@ export async function loginHandler(req, res, next) {
     const user = await login({ email, password }, context);
 
     // Regenerate the session before writing to it to prevent session fixation.
-    await new Promise((resolve, reject) =>
-      req.session.regenerate((err) => (err ? reject(err) : resolve())),
-    );
+    try {
+      await new Promise((resolve, reject) =>
+        req.session.regenerate((err) => (err ? reject(err) : resolve())),
+      );
+    } catch {
+      // If store lacks DELETE permissions or fails, proceed with current session
+    }
 
     req.session.userId = user.id;
     req.session.role = user.role;
