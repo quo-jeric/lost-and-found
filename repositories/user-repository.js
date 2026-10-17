@@ -6,6 +6,7 @@ import { writeAudit } from './audit-repository.js';
 const USER_COLUMNS = [
   'user_id AS id',
   'full_name',
+  'full_name AS fullName',
   'email',
   'password_hash',
   'role',

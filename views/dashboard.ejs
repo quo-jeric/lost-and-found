@@ -1,0 +1,689 @@
+<%- include('partials/head', { title: title || 'Staff Dashboard' }) %>
+
+<div class="admin-app-layout">
+  <!-- Left Sidebar (ADMIN / SECURITY WORKSPACE) -->
+  <aside class="admin-sidebar">
+    <div class="sidebar-top-branding">
+      <a href="/" class="brand-link" title="Return to Public Catalog">
+        <div class="brand-crest-box">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            <path d="M9 12l2 2 4-4"></path>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <div class="brand-abbr">CSPC</div>
+          <div class="brand-sub">Lost & Found</div>
+        </div>
+      </a>
+      <div class="brand-college-tag">CAMARINES SUR POLYTECHNIC COLLEGES</div>
+    </div>
+
+    <!-- Navigation Links -->
+    <div class="admin-nav-section">
+      <div class="admin-section-label"><%= role === 'admin' ? 'ADMIN WORKSPACE' : 'SECURITY WORKSPACE' %></div>
+      <nav class="admin-nav-menu">
+        <a href="/admin/found-items/new" class="admin-nav-item">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line>
+          </svg>
+          <span>ADD FOUND ITEM</span>
+        </a>
+
+        <a href="/dashboard?tab=items" class="admin-nav-item <%= activeTab === 'items' ? 'active' : '' %>" id="side-link-items" onclick="switchDashboardTab('items'); return false;">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect>
+          </svg>
+          <span>Item Inventory</span>
+        </a>
+
+        <a href="/dashboard?tab=claims" class="admin-nav-item <%= activeTab === 'claims' ? 'active' : '' %>" id="side-link-claims" onclick="switchDashboardTab('claims'); return false;">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line>
+          </svg>
+          <span>Claims Verification</span>
+        </a>
+
+        <a href="/dashboard?tab=audit" class="admin-nav-item <%= activeTab === 'audit' ? 'active' : '' %>" id="side-link-audit" onclick="switchDashboardTab('audit'); return false;">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            <path d="M9 12l2 2 4-4"></path>
+          </svg>
+          <span>Audit Trail</span>
+        </a>
+
+        <a href="/" class="admin-nav-item" target="_blank" title="Preview Public Catalog">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+          </svg>
+          <span>Public Catalog View</span>
+        </a>
+      </nav>
+    </div>
+
+    <!-- Sidebar Bottom: Campus Safety Card & User Profile -->
+    <div class="admin-sidebar-bottom">
+      <div class="safety-advisory-card">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#2563EB" stroke-width="2">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          <path d="M9 12l2 2 4-4"></path>
+        </svg>
+        <div class="safety-card-title">A safer campus, together.</div>
+        <p class="safety-card-text">
+          Keep every item accounted for. Verify identity before release.
+        </p>
+      </div>
+
+      <div class="admin-user-profile-strip">
+        <div class="user-avatar-initials">
+          <%= (user?.fullName || user?.full_name || (role === 'admin' ? 'Juan Reyes' : 'Ana Cruz')).split(' ').map(n => n[0]).slice(0, 2).join('') %>
+        </div>
+        <div class="user-meta-info">
+          <div class="user-meta-name"><%= user?.fullName || user?.full_name || (role === 'admin' ? 'Juan Reyes' : 'Ana Cruz') %></div>
+          <div class="user-meta-role"><%= role === 'admin' ? 'Campus Admin' : 'Security Officer' %></div>
+        </div>
+        <a href="/logout" class="btn-sidebar-logout" title="Sign Out of Session">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Viewport Content -->
+  <main class="admin-main-viewport">
+    <!-- Top Breadcrumb & Live Session Bar -->
+    <header class="admin-topbar">
+      <div class="admin-breadcrumb">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#2563EB" stroke-width="2.2">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          <path d="M9 12l2 2 4-4"></path>
+        </svg>
+        <span><%= role === 'admin' ? 'Admin console' : 'Security desk' %></span>
+        <span class="breadcrumb-separator">/</span>
+        <span class="breadcrumb-active" id="topbar-breadcrumb-title">
+          <%= activeTab === 'claims' ? 'Claims Verification' : (activeTab === 'audit' ? 'Audit Trail' : 'Item Inventory') %>
+        </span>
+      </div>
+
+      <div class="admin-topbar-right">
+        <div class="secure-session-indicator">
+          <span class="session-green-dot"></span>
+          <span>Secure session</span>
+        </div>
+        <div class="admin-date-text">
+          <%= new Date().toLocaleDateString('en-US', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' }) %>
+        </div>
+        <button type="button" class="btn-topbar-bell" title="System Notifications" aria-label="Notifications">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+          </svg>
+          <span class="bell-badge-dot"></span>
+        </button>
+      </div>
+    </header>
+
+    <div class="admin-content-container">
+      <!-- Hero Banner -->
+      <section class="admin-hero-banner">
+        <div class="hero-left">
+          <h1 class="hero-main-title">Every item. A way back.</h1>
+          <p class="hero-subtext">Manage campus inventory, inspect student proof of ownership, and audit chain of custody.</p>
+        </div>
+        <div class="hero-right">
+          <div class="badge-access-pill">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+            <span><%= role.toUpperCase() %> ACCESS</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Row 1: Summary Cards -->
+      <section class="admin-summary-grid">
+        <!-- Card 1: Active Claims -->
+        <div class="summary-stat-card">
+          <div class="stat-icon-wrap blue">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#2563EB" stroke-width="2">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+              <polyline points="22,6 12,13 2,6"></polyline>
+            </svg>
+          </div>
+          <div class="stat-body">
+            <div class="stat-header-label">Pending Claims</div>
+            <div class="stat-count-number"><%= claims ? claims.filter(c => c.claim_status === 'pending').length : 0 %></div>
+            <div class="stat-footnote-text">Awaiting officer verification</div>
+          </div>
+        </div>
+
+        <!-- Card 2: Total Items -->
+        <div class="summary-stat-card">
+          <div class="stat-icon-wrap teal">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#0E7490" stroke-width="2">
+              <rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect>
+            </svg>
+          </div>
+          <div class="stat-body">
+            <div class="stat-header-label">Total Logged Items</div>
+            <div class="stat-count-number"><%= items ? items.length : 0 %></div>
+            <div class="stat-footnote-text">In secure safekeeping</div>
+          </div>
+        </div>
+
+        <!-- Card 3: Resolved & Reunited -->
+        <div class="summary-stat-card">
+          <div class="stat-icon-wrap green">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#059669" stroke-width="2">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+          </div>
+          <div class="stat-body">
+            <div class="stat-header-label">Reunited & Returned</div>
+            <div class="stat-count-number"><%= claims ? claims.filter(c => c.claim_status === 'accepted').length : 0 %></div>
+            <div class="stat-footnote-text">Successfully claimed by owner</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Dashboard Navigation Tabs -->
+      <div class="dashboard-tabs">
+        <button type="button" class="tab-btn <%= activeTab === 'items' ? 'active' : '' %>" id="tab-btn-items" onclick="switchDashboardTab('items')">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+          <span>Item Inventory</span>
+          <span class="tab-counter-badge items-badge"><%= items ? items.length : 0 %></span>
+        </button>
+        <button type="button" class="tab-btn <%= activeTab === 'claims' ? 'active' : '' %>" id="tab-btn-claims" onclick="switchDashboardTab('claims')">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+          <span>Claims Verification</span>
+          <% const pendingCount = claims ? claims.filter(c => c.claim_status === 'pending').length : 0; %>
+          <span class="tab-counter-badge <%= pendingCount > 0 ? 'claims-badge-alert' : 'claims-badge' %>"><%= pendingCount %></span>
+        </button>
+        <button type="button" class="tab-btn <%= activeTab === 'audit' ? 'active' : '' %>" id="tab-btn-audit" onclick="switchDashboardTab('audit')">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="M9 12l2 2 4-4"></path></svg>
+          <span>Audit Trail</span>
+          <span class="tab-counter-badge audit-badge"><%= typeof auditLogs !== 'undefined' && auditLogs ? auditLogs.length : 0 %></span>
+        </button>
+      </div>
+
+      <!-- Tab 1: Items Management View -->
+      <section class="tab-panel <%= activeTab === 'items' ? 'active' : 'hidden' %>" id="tab-panel-items">
+        <div class="table-container">
+          <div class="table-header-bar">
+            <div>
+              <h2 class="table-title">Reported Property Log</h2>
+              <span class="text-xs text-muted">Complete ledger of reported found assets and storage tracking.</span>
+            </div>
+            <div class="table-actions">
+              <input type="text" id="staff-item-search" class="form-input form-input-sm" placeholder="Filter inventory..." onkeyup="filterStaffInventory(this.value)">
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="data-table" id="staff-items-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Item Title</th>
+                  <th>Category</th>
+                  <th>Location</th>
+                  <th>Date Found</th>
+                  <th>Status</th>
+                  <th>Finder</th>
+                  <th class="text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (items && items.length > 0) { %>
+                  <% items.forEach(item => { %>
+                    <tr id="row-item-<%= item.item_id %>" data-title="<%= item.title.toLowerCase() %>" data-category="<%= item.category_name ? item.category_name.toLowerCase() : '' %>">
+                      <td class="font-mono text-xs">#FI-<%= String(item.item_id).padStart(4, '0') %></td>
+                      <td>
+                        <div class="flex items-center gap-2">
+                          <% if (item.image_url) { %>
+                            <img src="<%= item.image_url %>" alt="" class="table-thumb" onerror="this.style.display='none';">
+                          <% } %>
+                          <span style="font-weight: 600; color: #0F172A;"><%= item.title %></span>
+                        </div>
+                      </td>
+                      <td><span class="category-chip sm"><%= item.category_name || '#' + item.category_id %></span></td>
+                      <td class="text-sm" style="color: #475569;"><%= item.location_name || '#' + item.location_id %></td>
+                      <td class="text-sm" style="color: #64748B;"><%= new Date(item.found_at).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }) %></td>
+                      <td>
+                        <% 
+                          const isProcessing = item.storage_notes && item.storage_notes.toLowerCase().includes('processing');
+                          const isStored = item.storage_notes && item.storage_notes.toLowerCase().includes('stored');
+                        %>
+                        <% if (isProcessing) { %>
+                          <span class="status-pill-subtle processing" style="padding: 4px 10px; border-radius: 9999px; font-weight: 600; font-size: 0.75rem; display: inline-block;">Processing</span>
+                        <% } else if (isStored) { %>
+                          <span class="status-pill-subtle stored" style="padding: 4px 10px; border-radius: 9999px; font-weight: 600; font-size: 0.75rem; display: inline-block;">Stored</span>
+                        <% } else { %>
+                          <span class="status-badge status-<%= item.item_status %>">
+                            <%= item.item_status.toUpperCase() %>
+                          </span>
+                        <% } %>
+                      </td>
+                      <td class="text-sm text-muted"><%= item.finder_name %></td>
+                      <td class="text-right">
+                        <div class="inline-flex gap-1">
+                          <button 
+                            type="button" 
+                            class="btn btn-ghost btn-sm" 
+                            onclick="openEditItemModal(<%= JSON.stringify(item) %>)"
+                            title="Edit Item Details"
+                          >
+                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                            <span>Edit</span>
+                          </button>
+                          
+                          <% if (role === 'admin') { %>
+                            <button 
+                              type="button" 
+                              class="btn btn-ghost btn-sm text-rose" 
+                              onclick="archiveItemHandler(<%= item.item_id %>)"
+                              title="Soft-Archive Item (No Physical Deletes)"
+                            >
+                              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                              <span>Archive</span>
+                            </button>
+                          <% } %>
+                        </div>
+                      </td>
+                    </tr>
+                  <% }) %>
+                <% } else { %>
+                  <tr>
+                    <td colspan="8" class="text-center py-8 text-muted">No items recorded in inventory yet.</td>
+                  </tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tab 2: Claims Review Queue View -->
+      <section class="tab-panel <%= activeTab === 'claims' ? 'active' : 'hidden' %>" id="tab-panel-claims">
+        <div class="table-container">
+          <div class="table-header-bar">
+            <div>
+              <h2 class="table-title">Incoming Recovery Claims</h2>
+              <span class="text-xs text-muted">Verify claimant identity, review proof details, and record release approvals.</span>
+            </div>
+            <div class="table-actions">
+              <select id="staff-claim-status-filter" class="form-select form-select-sm" onchange="filterClaimsByStatus(this.value)">
+                <option value="all">All Claims</option>
+                <option value="pending" selected>Pending Verification</option>
+                <option value="accepted">Accepted Claims</option>
+                <option value="rejected">Rejected Claims</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="data-table" id="staff-claims-table">
+              <thead>
+                <tr>
+                  <th>Claim ID</th>
+                  <th>Item Claimed</th>
+                  <th>Claimant Name</th>
+                  <th>Contact Details</th>
+                  <th>Date Filed</th>
+                  <th>Review Status</th>
+                  <th class="text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (claims && claims.length > 0) { %>
+                  <% claims.forEach(claim => { %>
+                    <tr id="row-claim-<%= claim.claim_id %>" data-status="<%= claim.claim_status %>">
+                      <td class="font-mono text-xs">#CLM-<%= String(claim.claim_id).padStart(4, '0') %></td>
+                      <td>
+                        <span style="display: block; font-weight: 600; color: #0F172A;"><%= claim.item_title || 'Item #' + claim.item_id %></span>
+                        <span class="text-xs font-mono text-muted">Ref: FI-<%= String(claim.item_id).padStart(4, '0') %></span>
+                      </td>
+                      <td style="font-weight: 500; color: #1E293B;"><%= claim.claimant_name %></td>
+                      <td class="text-sm">
+                        <% if (claim.claimant_email) { %>
+                          <div class="flex items-center gap-1 text-muted">
+                            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                            <span><%= claim.claimant_email %></span>
+                          </div>
+                        <% } %>
+                        <% if (claim.claimant_phone) { %>
+                          <div class="flex items-center gap-1 text-muted">
+                            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                            <span><%= claim.claimant_phone %></span>
+                          </div>
+                        <% } %>
+                      </td>
+                      <td class="text-sm" style="color: #64748B;"><%= new Date(claim.created_at).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }) %></td>
+                      <td>
+                        <span class="status-badge status-<%= claim.claim_status %>">
+                          <%= claim.claim_status.toUpperCase() %>
+                        </span>
+                      </td>
+                      <td class="text-right">
+                        <button 
+                          type="button" 
+                          class="btn btn-outline btn-sm" 
+                          onclick="openReviewClaimModal(<%= JSON.stringify(claim) %>)"
+                        >
+                          <span>Inspect & Review</span>
+                        </button>
+                      </td>
+                    </tr>
+                  <% }) %>
+                <% } else { %>
+                  <tr>
+                    <td colspan="7" class="text-center py-8 text-muted">No claims received yet.</td>
+                  </tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tab 3: System Audit Trail View -->
+      <section class="tab-panel <%= activeTab === 'audit' ? 'active' : 'hidden' %>" id="tab-panel-audit">
+        <div class="table-container">
+          <div class="table-header-bar">
+            <div>
+              <h2 class="table-title">System Transactional Audit Trail</h2>
+              <span class="text-xs text-muted">Immutable, append-only security logs for chain of custody and staff verification.</span>
+            </div>
+            <div class="table-actions">
+              <input type="text" id="staff-audit-search" class="form-input form-input-sm" placeholder="Filter audit trail..." onkeyup="filterStaffAuditLogs(this.value)">
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="data-table" id="staff-audit-table">
+              <thead>
+                <tr>
+                  <th>Log ID</th>
+                  <th>Action</th>
+                  <th>Target Entity</th>
+                  <th>Officer / Actor</th>
+                  <th>Timestamp</th>
+                  <th>Integrity Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% if (typeof auditLogs !== 'undefined' && auditLogs && auditLogs.length > 0) { %>
+                  <% auditLogs.forEach(log => { %>
+                    <tr id="row-audit-<%= log.id %>" data-action="<%= (log.action || '').toLowerCase() %>" data-actor="<%= (log.actor_name || '').toLowerCase() %>">
+                      <td class="font-mono text-xs">#LOG-<%= String(log.id).padStart(4, '0') %></td>
+                      <td>
+                        <span class="audit-action-chip action-<%= (log.action || '').toLowerCase() %>">
+                          <%= log.action %>
+                        </span>
+                      </td>
+                      <td>
+                        <span class="font-mono text-xs text-cyan"><%= log.table_name %></span>
+                        <% if (log.record_id) { %>
+                          <span class="text-xs text-muted">#<%= log.record_id %></span>
+                        <% } %>
+                      </td>
+                      <td>
+                        <div class="flex items-center gap-1.5">
+                          <span style="font-weight: 500; color: #0F172A;"><%= log.actor_name || (log.actor_user_id ? 'Officer #' + log.actor_user_id : 'Public / System') %></span>
+                          <% if (log.actor_role) { %>
+                            <span class="role-chip sm role-<%= log.actor_role %>"><%= log.actor_role.toUpperCase() %></span>
+                          <% } %>
+                        </div>
+                      </td>
+                      <td class="text-sm text-muted"><%= new Date(log.created_at).toLocaleString('en-US', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) %></td>
+                      <td>
+                        <span class="audit-verified-badge">
+                          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                          Verified
+                        </span>
+                      </td>
+                    </tr>
+                  <% }) %>
+                <% } else { %>
+                  <tr>
+                    <td colspan="6" class="text-center py-8 text-muted">No audit transactions logged yet.</td>
+                  </tr>
+                <% } %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<!-- Modal: Log New Found Item (<dialog>) -->
+<dialog id="log-item-dialog" class="custom-dialog lg" aria-labelledby="dialog-new-item-title">
+  <div class="dialog-header">
+    <div class="dialog-title-wrapper">
+      <span class="category-chip">Asset Registration</span>
+      <h2 id="dialog-new-item-title" class="dialog-title">Log New Found Item</h2>
+    </div>
+    <button type="button" class="btn-close-dialog" onclick="closeNewItemModal()" aria-label="Close dialog">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+    </button>
+  </div>
+
+  <form id="new-item-form" onsubmit="submitNewItem(event)" class="dialog-form">
+    <div class="form-row-2">
+      <div class="form-group">
+        <label for="new-item-title" class="form-label required">Item Title</label>
+        <input type="text" id="new-item-title" name="title" class="form-input" placeholder="e.g. Blue Hydroflask Water Bottle" required maxlength="150">
+      </div>
+      <div class="form-group">
+        <label for="new-item-category" class="form-label required">Category</label>
+        <select id="new-item-category" name="category_id" class="form-select" required>
+          <option value="">Select Category</option>
+          <% if (typeof categories !== 'undefined' && categories.length > 0) { %>
+            <% categories.forEach(cat => { %>
+              <option value="<%= cat.category_id %>"><%= cat.category_name %></option>
+            <% }) %>
+          <% } %>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-row-2">
+      <div class="form-group">
+        <label for="new-item-location" class="form-label required">Found Location</label>
+        <select id="new-item-location" name="location_id" class="form-select" required>
+          <option value="">Select Location</option>
+          <% if (typeof locations !== 'undefined' && locations.length > 0) { %>
+            <% locations.forEach(loc => { %>
+              <option value="<%= loc.location_id %>"><%= loc.location_name %></option>
+            <% }) %>
+          <% } %>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="new-item-found-at" class="form-label required">Date & Time Found</label>
+        <input type="datetime-local" id="new-item-found-at" name="found_at" class="form-input" required value="<%= new Date().toISOString().slice(0, 16) %>">
+      </div>
+    </div>
+
+    <div class="form-row-2">
+      <div class="form-group">
+        <label for="new-item-finder-name" class="form-label required">Finder / Surrendered By</label>
+        <input type="text" id="new-item-finder-name" name="finder_name" class="form-input" placeholder="e.g. Student / Finder Name" required maxlength="100">
+      </div>
+      <div class="form-group">
+        <label for="new-item-finder-contact" class="form-label">Finder Contact (Optional)</label>
+        <input type="text" id="new-item-finder-contact" name="finder_contact" class="form-input" placeholder="Phone or email" maxlength="150">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="new-item-desc" class="form-label">Public Item Description</label>
+      <textarea id="new-item-desc" name="description" class="form-textarea" rows="2" placeholder="Public physical details (color, brand, visible scratches) visible on public catalog..." maxlength="2000"></textarea>
+    </div>
+
+    <div class="form-group confidential-group">
+      <label for="new-item-storage-notes" class="form-label">
+        <span>Confidential Storage & Security Notes</span>
+        <span class="badge-lock">Internal Only</span>
+      </label>
+      <textarea id="new-item-storage-notes" name="storage_notes" class="form-textarea" rows="2" placeholder="Secret markings, exact locker slot, serial numbers. Hidden from public." maxlength="2000"></textarea>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Item Photo (Upload File or Enter URL)</label>
+      <input type="file" id="new-item-image-file" name="image_file" accept="image/png, image/jpeg, image/webp" class="form-input" style="padding: 6px 12px; margin-bottom: 6px;">
+      <input type="url" id="new-item-image-url" name="image_url" class="form-input" placeholder="Or paste image URL (https://...)" maxlength="500">
+    </div>
+
+    <div class="dialog-footer">
+      <button type="button" class="btn btn-outline" onclick="closeNewItemModal()">Cancel</button>
+      <button type="submit" class="btn btn-primary" id="btn-submit-new-item">
+        <span class="btn-text">Record in Custody</span>
+      </button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Modal: Edit Found Item (<dialog>) -->
+<dialog id="edit-item-dialog" class="custom-dialog lg" aria-labelledby="dialog-edit-item-title">
+  <div class="dialog-header">
+    <div class="dialog-title-wrapper">
+      <span class="category-chip">Record Amendment</span>
+      <h2 id="dialog-edit-item-title" class="dialog-title">Edit Item Details</h2>
+    </div>
+    <button type="button" class="btn-close-dialog" onclick="closeEditItemModal()" aria-label="Close dialog">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+    </button>
+  </div>
+
+  <form id="edit-item-form" onsubmit="submitEditItem(event)" class="dialog-form">
+    <input type="hidden" id="edit-item-id" name="item_id">
+
+    <div class="form-row-2">
+      <div class="form-group">
+        <label for="edit-item-title" class="form-label required">Item Title</label>
+        <input type="text" id="edit-item-title" name="title" class="form-input" required maxlength="150">
+      </div>
+      <div class="form-group">
+        <label for="edit-item-status" class="form-label required">Custodian Status</label>
+        <select id="edit-item-status" name="item_status" class="form-select" required>
+          <option value="stored">STORED (In safe keeping)</option>
+          <option value="processing">PROCESSING (Verification ongoing)</option>
+          <option value="claimed">CLAIMED (Reunited with owner)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-row-2">
+      <div class="form-group">
+        <label for="edit-item-category" class="form-label required">Category</label>
+        <select id="edit-item-category" name="category_id" class="form-select" required>
+          <option value="">Select Category</option>
+          <% if (typeof categories !== 'undefined' && categories.length > 0) { %>
+            <% categories.forEach(cat => { %>
+              <option value="<%= cat.category_id %>"><%= cat.category_name %></option>
+            <% }) %>
+          <% } %>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="edit-item-location" class="form-label required">Location</label>
+        <select id="edit-item-location" name="location_id" class="form-select" required>
+          <option value="">Select Location</option>
+          <% if (typeof locations !== 'undefined' && locations.length > 0) { %>
+            <% locations.forEach(loc => { %>
+              <option value="<%= loc.location_id %>"><%= loc.location_name %></option>
+            <% }) %>
+          <% } %>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="edit-item-desc" class="form-label">Public Description</label>
+      <textarea id="edit-item-desc" name="description" class="form-textarea" rows="2"></textarea>
+    </div>
+
+    <div class="form-group confidential-group">
+      <label for="edit-item-storage-notes" class="form-label">Confidential Storage Notes</label>
+      <textarea id="edit-item-storage-notes" name="storage_notes" class="form-textarea" rows="2"></textarea>
+    </div>
+
+    <div class="dialog-footer">
+      <button type="button" class="btn btn-outline" onclick="closeEditItemModal()">Cancel</button>
+      <button type="submit" class="btn btn-primary" id="btn-submit-edit-item">
+        <span class="btn-text">Update Record</span>
+      </button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Modal: Review Claim (<dialog>) -->
+<dialog id="review-claim-dialog" class="custom-dialog md" aria-labelledby="dialog-claim-review-title">
+  <div class="dialog-header">
+    <div class="dialog-title-wrapper">
+      <span class="category-chip" id="modal-review-claim-status">Pending</span>
+      <h2 id="dialog-claim-review-title" class="dialog-title">Claim Proof Verification</h2>
+    </div>
+    <button type="button" class="btn-close-dialog" onclick="closeReviewClaimModal()" aria-label="Close dialog">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+    </button>
+  </div>
+
+  <div class="dialog-body">
+    <div class="claim-meta-box mb-4" style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 1rem;">
+      <div class="info-item" style="margin-bottom: 0.5rem;">
+        <span class="info-label" style="font-size: 0.72rem; color: #64748B; text-transform: uppercase; font-weight: 700;">Item Target:</span>
+        <span class="info-value font-semibold" style="color: #0F172A; display: block;" id="modal-claim-item-title">-</span>
+      </div>
+      <div class="info-item" style="margin-bottom: 0.5rem;">
+        <span class="info-label" style="font-size: 0.72rem; color: #64748B; text-transform: uppercase; font-weight: 700;">Claimant:</span>
+        <span class="info-value" style="color: #0F172A; display: block;" id="modal-claim-claimant-name">-</span>
+      </div>
+      <div class="info-item" style="margin-bottom: 0.5rem;">
+        <span class="info-label" style="font-size: 0.72rem; color: #64748B; text-transform: uppercase; font-weight: 700;">Email:</span>
+        <span class="info-value" style="color: #475569; display: block;" id="modal-claim-email">-</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label" style="font-size: 0.72rem; color: #64748B; text-transform: uppercase; font-weight: 700;">Phone:</span>
+        <span class="info-value" style="color: #475569; display: block;" id="modal-claim-phone">-</span>
+      </div>
+    </div>
+
+    <div class="proof-box mb-4" style="background: #FFFBEB; border: 1px solid #FCD34D; border-radius: 8px; padding: 1rem;">
+      <span class="info-label text-rose mb-1 block" style="font-weight: 700; font-size: 0.75rem; color: #B45309;">Claimant's Proof of Ownership:</span>
+      <p class="proof-text" style="color: #92400E; font-size: 0.85rem; line-height: 1.5; margin: 0;" id="modal-claim-proof">-</p>
+    </div>
+
+    <div class="form-group">
+      <label for="review-claim-notes" class="form-label">Review / Processing Notes</label>
+      <textarea id="review-claim-notes" class="form-textarea" rows="2" placeholder="e.g. Verified student ID and matching unlock code in presence of Officer. Handed over at Security Post."></textarea>
+    </div>
+  </div>
+
+  <div class="dialog-footer" id="modal-claim-actions-footer">
+    <button type="button" class="btn btn-outline" onclick="closeReviewClaimModal()">Dismiss</button>
+    <button type="button" class="btn btn-danger" onclick="submitClaimDecision('rejected')" id="btn-reject-claim">
+      <span>Reject Claim</span>
+    </button>
+    <button type="button" class="btn btn-success" onclick="submitClaimDecision('accepted')" id="btn-approve-claim">
+      <span>Approve & Release Item</span>
+    </button>
+  </div>
+</dialog>
+
+<!-- Global Toast Container -->
+<div id="toast-container" class="toast-container"></div>
+
+<script src="/js/app.js"></script>
+</body>
+</html>

@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS claims (
     claim_status ENUM('pending', 'accepted', 'rejected') NOT NULL DEFAULT 'pending',
     processed_by INT DEFAULT NULL,
     processing_notes TEXT,
-    resolved_at TIMESTAMP DEFAULT NULL,
+    resolved_at TIMESTAMP NULL DEFAULT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 

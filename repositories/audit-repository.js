@@ -113,47 +113,17 @@ export async function writeAudit(
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
-  try {
-    const [result] = await conn.execute(sql, [
-      tableName,
-      recId,
-      normalizedAction,
-      actorUserId,
-      oldJson,
-      newJson,
-      requestId,
-      ipAddress,
-    ]);
-    return result.insertId;
-  } catch (err) {
-    // If the table is named audit_logs (plural) in user schema, try fallback
-    if (err.code === 'ER_NO_SUCH_TABLE') {
-      const fallbackSql = `
-        INSERT INTO audit_logs (
-          table_name,
-          record_id,
-          action,
-          actor_user_id,
-          old_values,
-          new_values,
-          request_id,
-          ip_address
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `;
-      const [result] = await conn.execute(fallbackSql, [
-        tableName,
-        recId,
-        normalizedAction,
-        actorUserId,
-        oldJson,
-        newJson,
-        requestId,
-        ipAddress,
-      ]);
-      return result.insertId;
-    }
-    throw err;
-  }
+  const [result] = await conn.execute(sql, [
+    tableName,
+    recId,
+    normalizedAction,
+    actorUserId,
+    oldJson,
+    newJson,
+    requestId,
+    ipAddress,
+  ]);
+  return result.insertId;
 }
 
 /**
@@ -181,3 +151,31 @@ export async function getAuditLogsForRecord(conn, { tableName, recordId, limit =
   const [rows] = await conn.query(sql, [tableName, recordId, Number(limit), Number(offset)]);
   return rows;
 }
+
+/**
+ * Retrieves the latest transactional audit logs joined with actor details.
+ */
+export async function getLatestAuditLogs(conn, { limit = 50 } = {}) {
+  try {
+    const sql = `
+      SELECT
+        a.id,
+        a.table_name,
+        a.record_id,
+        a.action,
+        a.actor_user_id,
+        a.created_at,
+        u.full_name AS actor_name,
+        u.role AS actor_role
+      FROM audit_log a
+      LEFT JOIN users u ON a.actor_user_id = u.user_id
+      ORDER BY a.id DESC
+      LIMIT ?
+    `;
+    const [rows] = await conn.query(sql, [Number(limit)]);
+    return rows;
+  } catch (err) {
+    return [];
+  }
+}
+

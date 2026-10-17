@@ -1,0 +1,514 @@
+<%- include('partials/head', { title: title }) %>
+
+<div class="app-container">
+  <!-- Left Sidebar Navigation -->
+  <aside class="sidebar" aria-label="Campus Community Sidebar">
+    <div class="sidebar-top">
+      <a href="/" class="sidebar-brand">
+        <div class="brand-shield-box">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            <path d="M9 12l2 2 4-4"></path>
+          </svg>
+        </div>
+        <div class="brand-info">
+          <span class="brand-acronym">CSPC</span>
+          <span class="brand-name">Lost & Found</span>
+          <span class="brand-institution">Camarines Sur Polytechnic Colleges</span>
+        </div>
+      </a>
+
+      <div class="sidebar-section-title">NAVIGATION</div>
+      <nav class="sidebar-nav">
+        <a href="/" class="nav-item active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+          <span>Browse Found Items</span>
+        </a>
+
+        <button type="button" class="nav-item" onclick="openClaimGuideModal()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          <span>How to Claim</span>
+        </button>
+
+        <button type="button" class="nav-item" onclick="openSystemAboutModal()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+          <span>About Our System</span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- Sidebar Footer Card -->
+    <div class="sidebar-bottom">
+      <div class="sidebar-footer-card">
+        <svg class="shield-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          <path d="M9 12l2 2 4-4"></path>
+        </svg>
+        <h4 class="sidebar-footer-title">Found something familiar?</h4>
+        <p class="sidebar-footer-text">
+          Contact a guard and bring proof of ownership. We'll help you get it back.
+        </p>
+        <div class="sidebar-contact-info">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+          <div>
+            <strong>Campus Security Office</strong><br>
+            Main Gate &bull; 8:00 AM - 5:00 PM
+          </div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Viewport -->
+  <main class="main-viewport">
+    <!-- Geometric Background Decorative Lines matching screenshot -->
+    <svg class="geometric-bg-overlay" viewBox="0 0 600 450" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <polygon points="120,40 520,80 440,320 80,240" stroke="#0891B2" stroke-width="1.2" stroke-dasharray="6 6"/>
+      <polygon points="260,110 580,180 500,420 180,350" stroke="#38BDF8" stroke-width="0.8"/>
+      <line x1="120" y1="40" x2="260" y2="110" stroke="#0891B2" stroke-width="0.8"/>
+    </svg>
+
+    <!-- Top Breadcrumb & Status Header Bar -->
+    <header class="top-header-bar">
+      <div class="breadcrumb-trail">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+        <span>Campus Lost & Found</span>
+        <span>/</span>
+        <span class="current">Found items</span>
+      </div>
+
+      <div class="top-header-right">
+        <% if (typeof currentUser !== 'undefined' && currentUser) { %>
+          <span class="badge-public-view" style="background: #E0F2FE; color: #0369A1; border-color: #BAE6FD;">
+            STAFF ACTIVE: <%= currentUser.role.toUpperCase() %>
+          </span>
+          <a href="<%= currentUser.role === 'admin' ? '/admin/found-items/new' : '/dashboard' %>" class="staff-login-trigger">
+            <%= currentUser.role === 'admin' ? 'Admin Console' : 'Guard Desk' %>
+          </a>
+          <a href="/logout" class="staff-login-trigger" style="color: #EF4444;">Sign Out</a>
+        <% } else { %>
+          <span class="badge-public-view">
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+            PUBLIC VIEW
+          </span>
+          <a href="/login" class="staff-login-trigger" title="Personnel Access">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+            <span>Staff Access</span>
+          </a>
+        <% } %>
+        <span class="header-date-text" id="live-header-date">
+          <%= new Date().toLocaleDateString('en-US', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' }) %>
+        </span>
+      </div>
+    </header>
+
+    <!-- Headline Banner & Search Bar -->
+    <section class="portal-hero">
+      <div class="hero-content-row">
+        <div class="hero-left-col">
+          <span class="hero-start-tagline">LOST SOMETHING? START HERE.</span>
+          <h1 class="hero-headline">Every item. A way back.</h1>
+          <p class="hero-description">Browse items found across campus. Your next reunion could be right here.</p>
+        </div>
+        <div class="hero-stat-card">
+          <span class="stat-big-number" id="stats-total-count"><%= (typeof meta !== 'undefined' && meta.total) ? meta.total : (items ? items.length : 0) %></span>
+          <span class="stat-desc-label">items in safe keeping</span>
+        </div>
+      </div>
+
+      <!-- 3-Column Search and Filters Bar -->
+      <div class="search-filter-panel">
+        <!-- 1. Category -->
+        <div class="filter-input-block">
+          <span class="filter-field-label">ITEM CATEGORY</span>
+          <div class="filter-field-input-box">
+            <select id="filter-category" onchange="applyFilters()">
+              <option value="">All categories</option>
+              <% if (typeof categories !== 'undefined' && categories.length > 0) { %>
+                <% categories.forEach(cat => { %>
+                  <option value="<%= cat.category_id %>"><%= cat.category_name %></option>
+                <% }) %>
+              <% } %>
+            </select>
+          </div>
+        </div>
+
+        <!-- 2. Location -->
+        <div class="filter-input-block">
+          <span class="filter-field-label">FOUND LOCATION</span>
+          <div class="filter-field-input-box">
+            <select id="filter-location" onchange="applyFilters()">
+              <option value="">All campus locations</option>
+              <% if (typeof locations !== 'undefined' && locations.length > 0) { %>
+                <% locations.forEach(loc => { %>
+                  <option value="<%= loc.location_id %>"><%= loc.location_name %></option>
+                <% }) %>
+              <% } %>
+            </select>
+          </div>
+        </div>
+
+        <!-- 3. Search Keyword -->
+        <div class="filter-input-block">
+          <span class="filter-field-label">SEARCH FOUND ITEMS</span>
+          <div class="filter-field-input-box">
+            <svg class="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input 
+              type="search" 
+              id="catalog-search-input" 
+              class="with-icon" 
+              placeholder="Search by item name or description" 
+              autocomplete="off"
+            >
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Split Catalog Area: Left 3x3 Grid, Right Sticky Details -->
+    <div class="catalog-content-wrapper">
+      <!-- Left Column: Item Grid -->
+      <div class="grid-column-area">
+        <div class="grid-section-header">
+          <div class="grid-title-group">
+            <h2 class="grid-main-heading">All found items</h2>
+            <span class="grid-items-count" id="grid-count-text">
+              Showing 1-<%= items ? items.length : 0 %> of <%= (typeof meta !== 'undefined' && meta.total) ? meta.total : (items ? items.length : 0) %> items
+            </span>
+          </div>
+          <div class="grid-sort-box">
+            <select class="grid-sort-select" onchange="applyFilters()">
+              <option value="newest">Newest first &#x21C5;</option>
+              <option value="oldest">Oldest first &#x21C5;</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 3x3 Cards Grid -->
+        <div class="cards-grid" id="cards-grid-list">
+          <% if (items && items.length > 0) { %>
+            <% items.forEach((item, index) => { %>
+              <div 
+                class="found-item-card <%= index === 0 ? 'selected' : '' %>" 
+                id="card-item-<%= item.item_id %>"
+                onclick='selectCardItem(<%= JSON.stringify(item) %>, this)'
+              >
+                <!-- Selected checkmark badge -->
+                <div class="card-selected-badge">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </div>
+
+                <!-- Preview Area -->
+                <div class="card-media-box">
+                  <% if (item.image_url) { %>
+                    <img src="<%= item.image_url %>" alt="<%= item.title %>" class="card-img-element" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                    <div class="item-placeholder-graphic" style="display: none;">
+                      <%- getCategoryIconSvg(item.category_name, item.title) %>
+                      <span class="item-preview-text">ITEM PREVIEW</span>
+                      <span class="item-pending-text">Photo pending</span>
+                    </div>
+                  <% } else { %>
+                    <div class="item-placeholder-graphic">
+                      <%- getCategoryIconSvg(item.category_name, item.title) %>
+                      <span class="item-preview-text">ITEM PREVIEW</span>
+                      <span class="item-pending-text">Photo pending</span>
+                    </div>
+                  <% } %>
+                </div>
+
+                <!-- Card Body -->
+                <div class="card-content">
+                  <h3 class="card-item-title"><%= item.title %></h3>
+                  <span class="card-item-category"><%= item.category_name || 'Personal belongings' %></span>
+
+                  <div class="card-meta-line">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                    <span><%= item.location_name || 'Campus Grounds' %></span>
+                  </div>
+
+                  <div class="card-footer-meta">
+                    <div class="card-meta-line">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                      <span><%= new Date(item.found_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) %></span>
+                    </div>
+                    <span class="card-ref-code">FI-<%= String(item.item_id).padStart(4, '0') %></span>
+                  </div>
+                </div>
+              </div>
+            <% }) %>
+          <% } else { %>
+            <div style="grid-column: 1 / -1; background: #fff; border: 1px solid #E2E8F0; border-radius: 12px; padding: 3rem; text-align: center;">
+              <p style="color: #64748B; font-size: 0.95rem;">No items currently found matching this filter.</p>
+            </div>
+          <% } %>
+        </div>
+
+        <!-- Pagination Row -->
+        <div class="pagination-row">
+          <span>Page 1 of <%= (typeof meta !== 'undefined' && meta.total) ? Math.max(1, Math.ceil(meta.total / 9)) : 1 %> &bull; All categories</span>
+          <div class="pagination-controls">
+            <button type="button" class="page-nav-arrow" disabled>&lsaquo;</button>
+            <button type="button" class="page-num-btn active">1</button>
+            <button type="button" class="page-num-btn">2</button>
+            <button type="button" class="page-num-btn">3</button>
+            <button type="button" class="page-nav-arrow">&rsaquo;</button>
+          </div>
+        </div>
+
+        <!-- Public Footer Row -->
+        <footer class="public-portal-footer">
+          <span>Camarines Sur Polytechnic Colleges &bull; Campus Security Office</span>
+          <span>Concept preview &bull; Sample records</span>
+        </footer>
+      </div>
+
+      <!-- Right Column: Sticky Item Details Card -->
+      <aside class="details-panel-container" aria-label="Selected Item Details">
+        <div class="item-details-card" id="side-details-card">
+          <div class="details-panel-header">
+            <span class="details-panel-label">ITEM DETAILS</span>
+            <svg class="details-info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+          </div>
+
+          <div class="details-title-row">
+            <h3 class="details-item-title" id="side-item-title">
+              <%= (items && items[0]) ? items[0].title : 'Select an Item' %>
+            </h3>
+          </div>
+
+          <div class="details-ref-status-row">
+            <span class="details-ref-tag" id="side-item-ref">
+              <%= (items && items[0]) ? 'FI-' + String(items[0].item_id).padStart(4, '0') : 'FI-0000' %>
+            </span>
+            <span class="details-status-badge">Safe keeping</span>
+          </div>
+
+          <div class="details-specs-list">
+            <div class="spec-item">
+              <span class="spec-key">Category</span>
+              <span class="spec-val" id="side-item-category">
+                <%= (items && items[0]) ? ((items[0].category_id ? 'CAT-' + String(items[0].category_id).padStart(3, '0') + ' · ' : '') + (items[0].category_name || 'Unspecified')) : 'Select an item' %>
+              </span>
+            </div>
+
+            <div class="spec-item">
+              <span class="spec-key">Item type</span>
+              <span class="spec-val" id="side-item-type">
+                <%= (items && items[0] && items[0].brand) ? items[0].brand : 'Standard Asset' %>
+              </span>
+            </div>
+
+            <div class="spec-item">
+              <span class="spec-key">Appearance</span>
+              <span class="spec-val" id="side-item-appearance">
+                <%= (items && items[0]) ? (items[0].description || (items[0].color ? items[0].color + ' finish' : 'Good physical condition')) : '-' %>
+              </span>
+            </div>
+
+            <div class="spec-item">
+              <span class="spec-key">Found location</span>
+              <span class="spec-val" id="side-item-location">
+                <%= (items && items[0]) ? (items[0].location_name || 'Main Campus') : '-' %>
+              </span>
+            </div>
+
+            <div class="spec-item">
+              <span class="spec-key">Found date</span>
+              <span class="spec-val" id="side-item-date">
+                <%= (items && items[0]) ? new Date(items[0].found_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '-' %>
+              </span>
+            </div>
+          </div>
+
+          <!-- Officer Safe-keeper Badge -->
+          <div class="officer-badge-box">
+            <svg class="officer-shield-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="M9 12l2 2 4-4"></path></svg>
+            <div class="officer-info">
+              <span class="officer-name" id="side-item-finder"><%= (items && items[0] && items[0].finder_name) ? items[0].finder_name : 'Juan Reyes' %></span>
+              <span class="officer-role-id">Campus Security &bull; SG-014</span>
+            </div>
+          </div>
+
+          <!-- Action Button: Contact Guard / Claim Item -->
+          <button type="button" class="btn-contact-guard" onclick="openClaimModalFromSide()" id="btn-side-contact-guard">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+            <span>Contact Guard</span>
+          </button>
+
+          <p class="claim-instruction-hint">
+            Think this is yours? Bring a valid ID and describe the item to verify ownership before collection.
+          </p>
+        </div>
+      </aside>
+    </div>
+  </main>
+</div>
+
+<!-- Modal Dialog: File Claim / Contact Guard -->
+<dialog id="claim-modal-dialog" class="institutional-dialog" aria-labelledby="dialog-claim-title">
+  <div class="dialog-top-bar">
+    <h3 id="dialog-claim-title" class="dialog-modal-title">Claim Property & Contact Guard</h3>
+    <button type="button" class="btn-close-x" onclick="closeClaimModal()" aria-label="Close dialog">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+    </button>
+  </div>
+
+  <form id="public-claim-form" onsubmit="submitPublicClaim(event)">
+    <div class="dialog-content-body">
+      <input type="hidden" id="claim-item-id" name="item_id" value="<%= (items && items[0]) ? items[0].item_id : '' %>">
+
+      <div class="modal-item-summary-box">
+        <span class="summary-code-tag" id="modal-claim-item-ref">
+          <%= (items && items[0]) ? 'FI-' + String(items[0].item_id).padStart(4, '0') : '' %>
+        </span>
+        <h4 class="summary-title-text" id="modal-claim-item-title">
+          <%= (items && items[0]) ? items[0].title : '' %>
+        </h4>
+      </div>
+
+      <div class="form-field-group">
+        <label for="claimant-name" class="form-field-label">Your Full Name *</label>
+        <input type="text" id="claimant-name" name="claimant_name" class="form-field-input" placeholder="e.g. Maria Santos" required maxlength="50">
+      </div>
+
+      <div class="form-field-group">
+        <label for="claimant-email" class="form-field-label">Email Address</label>
+        <input type="email" id="claimant-email" name="claimant_email" class="form-field-input" placeholder="student@cspc.edu.ph" maxlength="50">
+      </div>
+
+      <div class="form-field-group">
+        <label for="claimant-phone" class="form-field-label">Contact Phone Number</label>
+        <input type="tel" id="claimant-phone" name="claimant_phone" class="form-field-input" placeholder="+63 912 345 6789" maxlength="20">
+      </div>
+
+      <div class="form-field-group">
+        <label for="claim-proof-description" class="form-field-label">Proof of Ownership / Identifying Marks</label>
+        <textarea 
+          id="claim-proof-description" 
+          name="proof_description" 
+          class="form-field-textarea" 
+          rows="3" 
+          placeholder="Describe unique details that prove this belongs to you (e.g. lock screen photo, engraved initials, distinct scratches, contents inside)..."
+          maxlength="5000"
+        ></textarea>
+      </div>
+    </div>
+
+    <div class="dialog-bottom-actions">
+      <button type="button" class="btn-cancel" onclick="closeClaimModal()">Cancel</button>
+      <button type="submit" class="btn-submit-action" id="btn-submit-claim-modal">
+        <span>Submit Claim to Security</span>
+      </button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Modal Dialog: Staff & Admin Login -->
+<dialog id="login-modal-dialog" class="institutional-dialog" aria-labelledby="dialog-login-title">
+  <div class="dialog-top-bar">
+    <h3 id="dialog-login-title" class="dialog-modal-title">Staff & Officer Sign-In</h3>
+    <button type="button" class="btn-close-x" onclick="closeLoginModal()" aria-label="Close dialog">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+    </button>
+  </div>
+
+  <form id="modal-login-form" onsubmit="handleModalLogin(event)">
+    <div class="dialog-content-body">
+      <p style="font-size: 0.8rem; color: #64748B; margin-bottom: 1.25rem;">
+        Log in with your official staff credentials to manage found items, audit logs, and claimant reviews.
+      </p>
+
+      <div class="form-field-group">
+        <label for="modal-login-email" class="form-field-label">Work Email</label>
+        <input type="email" id="modal-login-email" class="form-field-input" placeholder="security@cspc.edu.ph" required autocomplete="email">
+      </div>
+
+      <div class="form-field-group">
+        <label for="modal-login-password" class="form-field-label">Password</label>
+        <input type="password" id="modal-login-password" class="form-field-input" placeholder="••••••••••••" required autocomplete="current-password">
+      </div>
+    </div>
+
+    <div class="dialog-bottom-actions">
+      <button type="button" class="btn-cancel" onclick="closeLoginModal()">Cancel</button>
+      <button type="submit" class="btn-submit-action" id="btn-modal-login-submit">
+        <span>Authorize & Enter</span>
+      </button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Modal Dialog: How to Claim Guide -->
+<dialog id="claim-guide-dialog" class="institutional-dialog" aria-labelledby="dialog-guide-title">
+  <div class="dialog-top-bar">
+    <h3 id="dialog-guide-title" class="dialog-modal-title">How to Claim Your Belongings</h3>
+    <button type="button" class="btn-close-x" onclick="closeClaimGuideModal()" aria-label="Close dialog">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+    </button>
+  </div>
+  <div class="dialog-content-body" style="font-size: 0.85rem; color: #475569; line-height: 1.6;">
+    <div style="display: flex; flex-direction: column; gap: 1rem;">
+      <div style="display: flex; gap: 0.85rem; align-items: flex-start;">
+        <div style="flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; background: #EFF6FF; color: #2563EB; font-weight: 700; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; border: 1px solid #BFDBFE;">1</div>
+        <div>
+          <strong style="color: #0F172A; display: block; font-size: 0.85rem; margin-bottom: 0.2rem;">Locate & Take Note of Reference Code</strong>
+          <span style="color: #64748B;">Find your item in the public catalog and take note of the item reference (e.g. <code>FI-0001</code>).</span>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 0.85rem; align-items: flex-start;">
+        <div style="flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; background: #EFF6FF; color: #2563EB; font-weight: 700; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; border: 1px solid #BFDBFE;">2</div>
+        <div>
+          <strong style="color: #0F172A; display: block; font-size: 0.85rem; margin-bottom: 0.2rem;">Prepare Proof of Ownership</strong>
+          <span style="color: #64748B;">Bring valid CSPC Student ID or Government ID, plus proof of ownership (e.g., photo of item, proof of purchase, lock screen passcode for phones/laptops, or knowledge of secret markings).</span>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 0.85rem; align-items: flex-start;">
+        <div style="flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; background: #EFF6FF; color: #2563EB; font-weight: 700; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; border: 1px solid #BFDBFE;">3</div>
+        <div>
+          <strong style="color: #0F172A; display: block; font-size: 0.85rem; margin-bottom: 0.2rem;">Visit Campus Security Office</strong>
+          <span style="color: #64748B;">Head to the <strong>Campus Security Office at the Main Gate</strong> (Mon–Fri, 8:00 AM – 5:00 PM). The duty officer will verify your details and officially release your property.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="dialog-bottom-actions">
+    <button type="button" class="btn-cancel" onclick="closeClaimGuideModal()">Got It</button>
+  </div>
+</dialog>
+
+<!-- Modal Dialog: About Our System -->
+<dialog id="about-system-dialog" class="institutional-dialog" aria-labelledby="dialog-about-title">
+  <div class="dialog-top-bar">
+    <h3 id="dialog-about-title" class="dialog-modal-title">About CSPC Lost & Found</h3>
+    <button type="button" class="btn-close-x" onclick="document.getElementById('about-system-dialog').close()" aria-label="Close dialog">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+    </button>
+  </div>
+  <div class="dialog-content-body" style="font-size: 0.85rem; color: #475569; line-height: 1.6;">
+    <p style="margin-bottom: 0.85rem;">
+      The <strong>CSPC Lost & Found System</strong> is managed directly by the <strong>Campus Security Office</strong> to provide students, faculty, and campus visitors with an official, transparent register of recovered personal belongings.
+    </p>
+    <p style="margin-bottom: 0.85rem;">
+      <strong>Security & Integrity Standards:</strong>
+      <ul style="padding-left: 1.25rem; margin-top: 0.4rem;">
+        <li>Zero Physical Deletes: Records are permanently archived for chain of custody.</li>
+        <li>Transactional Audit Logs: Every status change and staff action is securely logged.</li>
+        <li>Private verification notes remain confidential to prevent fraudulent claims.</li>
+      </ul>
+    </p>
+    <p>
+      Visit the <strong>Campus Security Office at the Main Gate</strong> (8:00 AM – 5:00 PM, Mon–Fri) with a valid Student or National ID to claim verified property.
+    </p>
+  </div>
+  <div class="dialog-bottom-actions">
+    <button type="button" class="btn-cancel" onclick="document.getElementById('about-system-dialog').close()">Close</button>
+  </div>
+</dialog>
+
+<div id="toast-container" class="toast-container"></div>
+
+<script src="/js/app.js"></script>
+</body>
+</html>

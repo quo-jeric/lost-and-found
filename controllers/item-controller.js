@@ -64,6 +64,23 @@ export async function getItemHandler(req, res, next) {
 }
 
 /**
+ * POST /api/v1/items/upload
+ * Upload an item photo. Protected by requireRole('admin', 'guard').
+ */
+export async function uploadImageHandler(req, res, next) {
+  try {
+    if (!req.file) {
+      throw new AppError('No image file uploaded.', { status: 400, code: 'FILE_REQUIRED' });
+    }
+
+    const imageUrl = `/uploads/items/${req.file.filename}`;
+    return res.status(200).json({ data: { imageUrl, filename: req.file.filename } });
+  } catch (err) {
+    return next(err);
+  }
+}
+
+/**
  * POST /api/v1/items
  * Create a new lost/found item. Protected by requireRole('admin', 'guard').
  */
@@ -75,7 +92,12 @@ export async function createItemHandler(req, res, next) {
       ipAddress: req.ip ?? null,
     };
 
-    const item = await itemsService.addItem(req.body ?? {}, context);
+    const payload = { ...(req.body ?? {}) };
+    if (req.file) {
+      payload.image_url = `/uploads/items/${req.file.filename}`;
+    }
+
+    const item = await itemsService.addItem(payload, context);
 
     return res.status(201).json({ data: item });
   } catch (err) {
