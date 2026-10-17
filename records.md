@@ -604,6 +604,60 @@ All migrations are tracked in `schema_migrations` with SHA-256 checksums. Applie
   - All 143 unit tests passing (`npm test`).
   - Zero physical delete check verified (`npm run check:no-delete`).
 
+### Milestone 23: Item Inventory Fixed Image Layout, Thumbnail Box & Modal Preview
+- **Root Cause Analysis**:
+  - In `views/dashboard.ejs`, item records rendered `<img class="table-thumb">`, but `.table-thumb` had no styling in `public/css/style.css`.
+  - High-resolution item photos expanded to their native intrinsic pixel sizes (e.g., 1000px+), stretching table cells, pushing table headers/columns off-screen, and breaking the inventory layout.
+- **Fixed Layout & Thumbnail Box**:
+  - Created `.table-responsive` with smooth horizontal scrolling.
+  - Implemented `.table-item-cell` with `.table-thumb-box` (48px × 48px fixed dimensions, `overflow: hidden`, `border-radius: 8px`, border, subtle shadow, and hover zoom effect).
+  - Enforced `object-fit: cover` and strict 100% width/height constraints on `.table-thumb` so uploaded images never overflow or warp the table.
+  - Added clean `.table-thumb-fallback` icon box for items without photos or failed image URLs, ensuring every inventory row maintains aligned vertical rhythm.
+  - Set column widths and non-wrapping bounds for `#staff-items-table` (ID, Category, Date, Status, Finder, Actions) to prevent table squishing.
+- **Interactive Photo Lightbox Preview**:
+  - Added `<dialog id="image-preview-dialog">` in `views/dashboard.ejs` allowing staff/admins to click any item thumbnail and inspect the full image in a modal with ref code and title caption.
+  - Implemented `openThumbPreview()`, `openItemImagePreview()`, and `closeItemImagePreview()` in `public/js/app.js`.
+- **Testing & Verification**:
+  - Verified with real item `#FI-0014` and external image records.
+  - All 143 unit tests passing (`npm test`).
+
+### Milestone 24: Removal of Archive Action & Unified Button Design System
+- **Archive Action Removal**:
+  - Removed the `Archive` button from the Item Inventory ledger in `views/dashboard.ejs` to simplify operator actions down to active custody operations (`Claim` and `Edit`).
+  - Preserved backend zero-delete soft-archiving controller and unit tests intact.
+- **Unified Modern Button Design System**:
+  - Implemented comprehensive `.btn` design tokens in `public/css/style.css` (`.btn-primary`, `.btn-outline`, `.btn-success`, `.btn-ghost`, `.btn-sm`).
+  - Styled modal footer actions (`Cancel` with clean slate outline, `Update Record` and `Record in Custody` with institutional vibrant blue hover lift and shadow), completely eliminating browser-default beveled gray buttons.
+  - Designed dedicated ledger action buttons (`.btn-action-claim` in sky-blue pill accent and `.btn-action-edit` in sleek slate border card) with inline SVG icons and hover elevations.
+- **Testing & Verification**:
+  - All 143 unit tests passing (`npm test`).
+
+### Milestone 25: Dashboard-Wide Unified Pagination, Status Unification & Custody Fix
+- **Unified Pagination System Across All Dashboard Tabs**:
+  - **Item Inventory** ([`views/dashboard.ejs`](file:///media/nyaaxie/STORAGE/Documents/My%20Files%20-%20Brizuela/My%20Projects/lost_and_found/lost-and-found/views/dashboard.ejs#L395)): Default **5 items per page** (expandable to 10 or 20 items per page via dropdown), live search & status filter integration, and clear `#inventory-no-results-row`.
+  - **Claims Verification** ([`views/dashboard.ejs`](file:///media/nyaaxie/STORAGE/Documents/My%20Files%20-%20Brizuela/My%20Projects/lost_and_found/lost-and-found/views/dashboard.ejs#L575)): Default **5 claims per page** (expandable to 10 or 20), status pill filter tabs (`All`, `Pending`, `Approved`, `Rejected`), live search, and `#claims-no-results-row`.
+  - **Audit Trail** ([`views/dashboard.ejs`](file:///media/nyaaxie/STORAGE/Documents/My%20Files%20-%20Brizuela/My%20Projects/lost_and_found/lost-and-found/views/dashboard.ejs#L687)): Default **10 logs per page** (expandable to 20 or 50), live action/actor search, and `#audit-no-results-row`. Prevents 50+ logs from creating an excessively tall page.
+  - Standardized `.table-pagination-footer` in [`public/css/style.css`](file:///media/nyaaxie/STORAGE/Documents/My%20Files%20-%20Brizuela/My%20Projects/lost_and_found/lost-and-found/public/css/style.css): Dynamic readouts (`Showing X–Y of Z items/claims/logs`), `Prev`, numeric page buttons (`1`, `2`, `...`), and `Next` with active states and disabled boundaries.
+  - Automatically resets to Page 1 when searching or applying filter pills.
+- **Status Design Consistency & Ledger Streamlining**:
+  - Standardized `.status-pill-subtle` across all states (`Active`, `Stored`, `Processing`, `Claimed`).
+  - Removed redundant `Claim` button from Item Inventory table; claims workflow is consolidated in the dedicated Claims Verification tab.
+  - Resolved HTTP 400 Bad Request error on item updates by normalizing custodial values in both [`controllers/item-controller.js`](file:///media/nyaaxie/STORAGE/Documents/My%20Files%20-%20Brizuela/My%20Projects/lost_and_found/lost-and-found/controllers/item-controller.js) and [`public/js/app.js`](file:///media/nyaaxie/STORAGE/Documents/My%20Files%20-%20Brizuela/My%20Projects/lost_and_found/lost-and-found/public/js/app.js).
+- **Testing & Verification**:
+  - All 143 unit tests passing (`npm test`).
+
+### Milestone 26: Audit Search Input Redesign & Public View Dynamic Pagination
+- **Audit Trail Search Input Redesign** ([`views/dashboard.ejs`](file:///media/nyaaxie/STORAGE/Documents/My%20Files%20-%20Brizuela/My%20Projects/lost_and_found/lost-and-found/views/dashboard.ejs#L616)):
+  - Replaced the plain, unstyled text input (`.form-input.form-input-sm`) with the institutional `.table-search-input-wrap` and `.admin-search-field` containing an inline SVG search magnifying glass icon.
+  - Matches the sleek modern design of Item Inventory and Claims Verification search fields.
+- **Public Catalog Dynamic Pagination** ([`views/index.ejs`](file:///media/nyaaxie/STORAGE/Documents/My%20Files%20-%20Brizuela/My%20Projects/lost_and_found/lost-and-found/views/index.ejs#L248), [`routes/web-routes.js`](file:///media/nyaaxie/STORAGE/Documents/My%20Files%20-%20Brizuela/My%20Projects/lost_and_found/lost-and-found/routes/web-routes.js#L23), [`public/js/app.js`](file:///media/nyaaxie/STORAGE/Documents/My%20Files%20-%20Brizuela/My%20Projects/lost_and_found/lost-and-found/public/js/app.js#L90)):
+  - Converted the previously static, hardcoded dummy buttons (`1`, `2`, `3`) into a fully functional dynamic pagination system.
+  - Set default catalog page size to 6 cards per page with backend query support (`/api/v1/items?page=X&pageSize=6`).
+  - Added interactive `renderPublicPagination()`: generates `Prev` (`‹`), numeric buttons (`1`, `2`, ...), `Next` (`›`), and updates the summary label (e.g. `Page 1 of 2 • 8 items recorded`).
+  - Integrated `goToPublicPage()` with smooth scroll to catalog header upon page transitions.
+- **Testing & Verification**:
+  - All 143 unit tests passing (`npm test`).
+
 ---
 
 ## 7. Upcoming Roadmap & Pending Tasks

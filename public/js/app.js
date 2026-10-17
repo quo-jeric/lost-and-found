@@ -25,6 +25,26 @@ document.addEventListener('DOMContentLoaded', () => {
       }, 300);
     });
   }
+
+  // Initialize staff dashboard tables pagination & filters if tables are on page
+  if (document.getElementById('staff-items-table')) {
+    runStaffInventoryFilter();
+  }
+  if (document.getElementById('staff-claims-table')) {
+    filterStaffClaims();
+  }
+  if (document.getElementById('staff-audit-table')) {
+    filterStaffAuditLogs();
+  }
+
+  // Initialize public catalog pagination if on public view
+  const publicRow = document.getElementById('public-pagination-row');
+  if (publicRow) {
+    const page = parseInt(publicRow.getAttribute('data-page'), 10) || 1;
+    const total = parseInt(publicRow.getAttribute('data-total'), 10) || 0;
+    const pageSize = parseInt(publicRow.getAttribute('data-page-size'), 10) || 6;
+    renderPublicPagination({ page, total, pageSize });
+  }
 });
 
 // ── 1. Card Selection & Side Panel Synchronization ─────────────────────────
@@ -69,8 +89,11 @@ function selectCardItem(item, cardEl) {
   if (claimSummaryTitle) claimSummaryTitle.textContent = item.title;
 }
 
-// ── 2. Live Filters & Grid Re-rendering ────────────────────────────────────
-async function applyFilters() {
+let publicCurrentPage = 1;
+const publicPageSize = 6;
+
+async function applyFilters(page = 1) {
+  publicCurrentPage = page;
   const categoryId = document.getElementById('filter-category')?.value || '';
   const locationId = document.getElementById('filter-location')?.value || '';
   const search = document.getElementById('catalog-search-input')?.value.trim() || '';
@@ -79,7 +102,8 @@ async function applyFilters() {
   if (categoryId) params.append('category_id', categoryId);
   if (locationId) params.append('location_id', locationId);
   if (search) params.append('search', search);
-  params.append('pageSize', '24');
+  params.append('page', String(publicCurrentPage));
+  params.append('pageSize', String(publicPageSize));
 
   const gridContainer = document.getElementById('cards-grid-list');
   const countText = document.getElementById('grid-count-text');
@@ -97,20 +121,96 @@ async function applyFilters() {
     }
 
     const items = json.data || [];
-    const total = json.meta?.total ?? items.length;
+    const meta = json.meta || { page: publicCurrentPage, pageSize: publicPageSize, total: items.length };
+    const total = meta.total ?? items.length;
+
+    const startItem = total === 0 ? 0 : (meta.page - 1) * meta.pageSize + 1;
+    const endItem = Math.min(startItem + items.length - (total === 0 ? 0 : 1), total);
 
     if (countText) {
-      countText.textContent = `Showing 1-${items.length} of ${total} items`;
+      countText.textContent = total === 0 ? 'Showing 0 items' : `Showing ${startItem}–${endItem} of ${total} items`;
     }
     if (statBigNumber) {
       statBigNumber.textContent = total;
     }
 
     renderItemsGrid(items);
+    renderPublicPagination(meta);
   } catch (err) {
     showToast(err.message, 'error');
   } finally {
     gridContainer.style.opacity = '1';
+  }
+}
+
+function renderPublicPagination(meta) {
+  const paginationRow = document.getElementById('public-pagination-row');
+  const infoEl = document.getElementById('public-pagination-info');
+  const controlsEl = document.getElementById('public-pagination-controls');
+
+  if (!paginationRow || !controlsEl) return;
+
+  const page = meta.page || 1;
+  const pageSize = meta.pageSize || publicPageSize;
+  const total = meta.total || 0;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+  if (infoEl) {
+    infoEl.innerHTML = `Page <strong>${page}</strong> of <strong>${totalPages}</strong> &bull; <strong>${total}</strong> items recorded`;
+  }
+
+  controlsEl.innerHTML = '';
+
+  // Prev Button
+  const prevBtn = document.createElement('button');
+  prevBtn.type = 'button';
+  prevBtn.className = 'page-nav-arrow';
+  prevBtn.innerHTML = '&lsaquo;';
+  prevBtn.title = 'Previous page';
+  prevBtn.disabled = page <= 1 || total === 0;
+  prevBtn.onclick = () => goToPublicPage(page - 1);
+  controlsEl.appendChild(prevBtn);
+
+  // Numbered buttons
+  for (let p = 1; p <= totalPages; p++) {
+    if (
+      p === 1 || 
+      p === totalPages || 
+      (p >= page - 1 && p <= page + 1)
+    ) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = `page-num-btn ${p === page ? 'active' : ''}`;
+      btn.textContent = String(p);
+      btn.onclick = () => goToPublicPage(p);
+      controlsEl.appendChild(btn);
+    } else if (
+      (p === page - 2 && p > 1) || 
+      (p === page + 2 && p < totalPages)
+    ) {
+      const ellipsis = document.createElement('span');
+      ellipsis.className = 'page-ellipsis';
+      ellipsis.textContent = '…';
+      controlsEl.appendChild(ellipsis);
+    }
+  }
+
+  // Next Button
+  const nextBtn = document.createElement('button');
+  nextBtn.type = 'button';
+  nextBtn.className = 'page-nav-arrow';
+  nextBtn.innerHTML = '&rsaquo;';
+  nextBtn.title = 'Next page';
+  nextBtn.disabled = page >= totalPages || total === 0;
+  nextBtn.onclick = () => goToPublicPage(page + 1);
+  controlsEl.appendChild(nextBtn);
+}
+
+function goToPublicPage(page) {
+  applyFilters(page);
+  const portalHeader = document.querySelector('.public-portal-layout');
+  if (portalHeader) {
+    portalHeader.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 }
 
@@ -461,14 +561,26 @@ function switchDashboardTab(tabName) {
     const newUrl = `${window.location.pathname}?tab=${tabName}`;
     window.history.replaceState({ path: newUrl }, '', newUrl);
   }
+
+  if (tabName === 'items') {
+    runStaffInventoryFilter();
+  } else if (tabName === 'claims') {
+    filterStaffClaims();
+  } else if (tabName === 'audit') {
+    filterStaffAuditLogs();
+  }
 }
 
-// ── 8. Table Search & Filtering ─────────────────────────────────────────────
+// ── 8. Table Search, Filtering & Pagination ──────────────────────────────────
+let invCurrentPage = 1;
+let invPageSize = 5;
+
 function filterStaffInventory(query) {
   const searchInput = document.getElementById('staff-item-search');
   if (searchInput && query !== undefined && searchInput.value !== query) {
     searchInput.value = query;
   }
+  invCurrentPage = 1;
   runStaffInventoryFilter();
 }
 
@@ -477,10 +589,10 @@ function runStaffInventoryFilter() {
   const category = (document.getElementById('staff-item-category-filter')?.value || 'all').toLowerCase().trim();
   const status = (document.getElementById('staff-item-status-filter')?.value || 'all').toLowerCase().trim();
 
-  const rows = document.querySelectorAll('#staff-items-table tbody tr');
-  let matchCount = 0;
+  const allRows = document.querySelectorAll('#staff-items-table tbody tr');
+  const matchedRows = [];
 
-  rows.forEach((row) => {
+  allRows.forEach((row) => {
     if (!row.getAttribute('data-id')) return;
 
     const id = row.getAttribute('data-id') || '';
@@ -503,17 +615,121 @@ function runStaffInventoryFilter() {
     const matchesStatus = status === 'all' || rowStatus === status;
 
     if (matchesQuery && matchesCategory && matchesStatus) {
-      row.style.display = '';
-      matchCount++;
+      matchedRows.push(row);
     } else {
       row.style.display = 'none';
     }
   });
 
+  const totalMatches = matchedRows.length;
+  const totalPages = Math.max(1, Math.ceil(totalMatches / invPageSize));
+
+  if (invCurrentPage > totalPages) {
+    invCurrentPage = totalPages;
+  }
+  if (invCurrentPage < 1) {
+    invCurrentPage = 1;
+  }
+
+  const startIndex = (invCurrentPage - 1) * invPageSize;
+  const endIndex = Math.min(startIndex + invPageSize, totalMatches);
+
+  matchedRows.forEach((row, idx) => {
+    if (idx >= startIndex && idx < endIndex) {
+      row.style.display = '';
+    } else {
+      row.style.display = 'none';
+    }
+  });
+
+  // Empty state handling
+  const noResultsRow = document.getElementById('inventory-no-results-row');
+  if (noResultsRow) {
+    noResultsRow.style.display = totalMatches === 0 ? '' : 'none';
+  }
+
+  // Counter badge at top
   const counterEl = document.getElementById('inventory-results-counter');
   if (counterEl) {
-    counterEl.textContent = `Showing ${matchCount} items`;
+    counterEl.textContent = `Showing ${totalMatches} items`;
   }
+
+  // Pagination info at bottom
+  const startEl = document.getElementById('inv-page-start');
+  const endEl = document.getElementById('inv-page-end');
+  const totalEl = document.getElementById('inv-page-total');
+  if (startEl && endEl && totalEl) {
+    startEl.textContent = totalMatches === 0 ? '0' : String(startIndex + 1);
+    endEl.textContent = String(endIndex);
+    totalEl.textContent = String(totalMatches);
+  }
+
+  renderInventoryPaginationButtons(totalPages, totalMatches);
+}
+
+function renderInventoryPaginationButtons(totalPages, totalMatches) {
+  const prevBtn = document.getElementById('inv-btn-prev');
+  const nextBtn = document.getElementById('inv-btn-next');
+  const numbersContainer = document.getElementById('inventory-page-numbers');
+
+  if (prevBtn) {
+    prevBtn.disabled = invCurrentPage <= 1 || totalMatches === 0;
+  }
+  if (nextBtn) {
+    nextBtn.disabled = invCurrentPage >= totalPages || totalMatches === 0;
+  }
+
+  if (!numbersContainer) return;
+  numbersContainer.innerHTML = '';
+
+  if (totalMatches === 0) {
+    const emptyBtn = document.createElement('button');
+    emptyBtn.type = 'button';
+    emptyBtn.className = 'page-num-btn active';
+    emptyBtn.textContent = '1';
+    emptyBtn.disabled = true;
+    numbersContainer.appendChild(emptyBtn);
+    return;
+  }
+
+  for (let p = 1; p <= totalPages; p++) {
+    // Show first, last, current, and adjacent neighbours
+    if (
+      p === 1 || 
+      p === totalPages || 
+      (p >= invCurrentPage - 1 && p <= invCurrentPage + 1)
+    ) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = `page-num-btn ${p === invCurrentPage ? 'active' : ''}`;
+      btn.textContent = String(p);
+      btn.onclick = () => goToInventoryPage(p);
+      numbersContainer.appendChild(btn);
+    } else if (
+      (p === invCurrentPage - 2 && p > 1) || 
+      (p === invCurrentPage + 2 && p < totalPages)
+    ) {
+      const ellipsis = document.createElement('span');
+      ellipsis.className = 'page-ellipsis';
+      ellipsis.textContent = '…';
+      numbersContainer.appendChild(ellipsis);
+    }
+  }
+}
+
+function goToInventoryPage(page) {
+  invCurrentPage = page;
+  runStaffInventoryFilter();
+  const table = document.getElementById('staff-items-table');
+  if (table) {
+    table.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
+
+function changeInventoryPageSize(newSize) {
+  invPageSize = parseInt(newSize, 10) || 5;
+  invCurrentPage = 1;
+  runStaffInventoryFilter();
 }
 
 function resetStaffInventoryFilters() {
@@ -525,16 +741,20 @@ function resetStaffInventoryFilters() {
   if (catFilter) catFilter.value = 'all';
   if (statusFilter) statusFilter.value = 'all';
 
+  invCurrentPage = 1;
   runStaffInventoryFilter();
 }
 
 let currentClaimFilterStatus = 'all';
+let claimsCurrentPage = 1;
+let claimsPageSize = 5;
 
 function setClaimFilter(status, btnEl) {
   currentClaimFilterStatus = status;
   const pillBtns = document.querySelectorAll('.filter-pill-selector .filter-pill-btn');
   pillBtns.forEach((btn) => btn.classList.remove('active'));
   if (btnEl) btnEl.classList.add('active');
+  claimsCurrentPage = 1;
   filterStaffClaims();
 }
 
@@ -547,10 +767,10 @@ function filterStaffClaims() {
   const query = (document.getElementById('staff-claim-search')?.value || '').toLowerCase().trim();
   const status = currentClaimFilterStatus;
 
-  const rows = document.querySelectorAll('#staff-claims-table tbody tr');
-  let matchCount = 0;
+  const allRows = document.querySelectorAll('#staff-claims-table tbody tr');
+  const matchedRows = [];
 
-  rows.forEach((row) => {
+  allRows.forEach((row) => {
     if (!row.getAttribute('data-id')) return;
 
     const rowStatus = row.getAttribute('data-status') || '';
@@ -570,40 +790,252 @@ function filterStaffClaims() {
     const matchesStatus = status === 'all' || rowStatus === status;
 
     if (matchesQuery && matchesStatus) {
-      row.style.display = '';
-      matchCount++;
+      matchedRows.push(row);
     } else {
       row.style.display = 'none';
     }
   });
+
+  const totalMatches = matchedRows.length;
+  const totalPages = Math.max(1, Math.ceil(totalMatches / claimsPageSize));
+
+  if (claimsCurrentPage > totalPages) {
+    claimsCurrentPage = totalPages;
+  }
+  if (claimsCurrentPage < 1) {
+    claimsCurrentPage = 1;
+  }
+
+  const startIndex = (claimsCurrentPage - 1) * claimsPageSize;
+  const endIndex = Math.min(startIndex + claimsPageSize, totalMatches);
+
+  matchedRows.forEach((row, idx) => {
+    if (idx >= startIndex && idx < endIndex) {
+      row.style.display = '';
+    } else {
+      row.style.display = 'none';
+    }
+  });
+
+  const noResultsRow = document.getElementById('claims-no-results-row');
+  if (noResultsRow) {
+    noResultsRow.style.display = totalMatches === 0 ? '' : 'none';
+  }
 
   const counterEl = document.getElementById('claims-results-counter');
   if (counterEl) {
     if (status === 'all') {
-      counterEl.textContent = `Showing ${matchCount} claims`;
+      counterEl.textContent = `Showing ${totalMatches} claims`;
     } else if (status === 'pending') {
-      counterEl.textContent = `${matchCount} Pending Verification`;
+      counterEl.textContent = `${totalMatches} Pending Verification`;
     } else if (status === 'accepted') {
-      counterEl.textContent = `${matchCount} Approved`;
+      counterEl.textContent = `${totalMatches} Approved`;
     } else if (status === 'rejected') {
-      counterEl.textContent = `${matchCount} Rejected`;
+      counterEl.textContent = `${totalMatches} Rejected`;
+    }
+  }
+
+  const startEl = document.getElementById('claims-page-start');
+  const endEl = document.getElementById('claims-page-end');
+  const totalEl = document.getElementById('claims-page-total');
+  if (startEl && endEl && totalEl) {
+    startEl.textContent = totalMatches === 0 ? '0' : String(startIndex + 1);
+    endEl.textContent = String(endIndex);
+    totalEl.textContent = String(totalMatches);
+  }
+
+  renderClaimsPaginationButtons(totalPages, totalMatches);
+}
+
+function renderClaimsPaginationButtons(totalPages, totalMatches) {
+  const prevBtn = document.getElementById('claims-btn-prev');
+  const nextBtn = document.getElementById('claims-btn-next');
+  const numbersContainer = document.getElementById('claims-page-numbers');
+
+  if (prevBtn) {
+    prevBtn.disabled = claimsCurrentPage <= 1 || totalMatches === 0;
+  }
+  if (nextBtn) {
+    nextBtn.disabled = claimsCurrentPage >= totalPages || totalMatches === 0;
+  }
+
+  if (!numbersContainer) return;
+  numbersContainer.innerHTML = '';
+
+  if (totalMatches === 0) {
+    const emptyBtn = document.createElement('button');
+    emptyBtn.type = 'button';
+    emptyBtn.className = 'page-num-btn active';
+    emptyBtn.textContent = '1';
+    emptyBtn.disabled = true;
+    numbersContainer.appendChild(emptyBtn);
+    return;
+  }
+
+  for (let p = 1; p <= totalPages; p++) {
+    if (
+      p === 1 ||
+      p === totalPages ||
+      (p >= claimsCurrentPage - 1 && p <= claimsCurrentPage + 1)
+    ) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = `page-num-btn ${p === claimsCurrentPage ? 'active' : ''}`;
+      btn.textContent = String(p);
+      btn.onclick = () => goToClaimsPage(p);
+      numbersContainer.appendChild(btn);
+    } else if (
+      (p === claimsCurrentPage - 2 && p > 1) ||
+      (p === claimsCurrentPage + 2 && p < totalPages)
+    ) {
+      const ellipsis = document.createElement('span');
+      ellipsis.className = 'page-ellipsis';
+      ellipsis.textContent = '…';
+      numbersContainer.appendChild(ellipsis);
     }
   }
 }
 
+function goToClaimsPage(page) {
+  claimsCurrentPage = page;
+  filterStaffClaims();
+  const table = document.getElementById('staff-claims-table');
+  if (table) {
+    table.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
+
+function changeClaimsPageSize(newSize) {
+  claimsPageSize = parseInt(newSize, 10) || 5;
+  claimsCurrentPage = 1;
+  filterStaffClaims();
+}
+
+let auditCurrentPage = 1;
+let auditPageSize = 10;
+
 function filterStaffAuditLogs(query) {
-  const q = (query || '').toLowerCase().trim();
-  const rows = document.querySelectorAll('#staff-audit-table tbody tr');
-  rows.forEach((row) => {
+  const searchInput = document.getElementById('staff-audit-search');
+  const q = (query !== undefined ? query : (searchInput?.value || '')).toLowerCase().trim();
+
+  const allRows = document.querySelectorAll('#staff-audit-table tbody tr');
+  const matchedRows = [];
+
+  allRows.forEach((row) => {
+    if (row.id === 'audit-no-results-row') return;
+    if (!row.getAttribute('data-action')) return;
+
     const action = row.getAttribute('data-action') || '';
     const actor = row.getAttribute('data-actor') || '';
     const text = row.innerText.toLowerCase();
+
     if (!q || action.includes(q) || actor.includes(q) || text.includes(q)) {
+      matchedRows.push(row);
+    } else {
+      row.style.display = 'none';
+    }
+  });
+
+  const totalMatches = matchedRows.length;
+  const totalPages = Math.max(1, Math.ceil(totalMatches / auditPageSize));
+
+  if (auditCurrentPage > totalPages) {
+    auditCurrentPage = totalPages;
+  }
+  if (auditCurrentPage < 1) {
+    auditCurrentPage = 1;
+  }
+
+  const startIndex = (auditCurrentPage - 1) * auditPageSize;
+  const endIndex = Math.min(startIndex + auditPageSize, totalMatches);
+
+  matchedRows.forEach((row, idx) => {
+    if (idx >= startIndex && idx < endIndex) {
       row.style.display = '';
     } else {
       row.style.display = 'none';
     }
   });
+
+  const noResultsRow = document.getElementById('audit-no-results-row');
+  if (noResultsRow) {
+    noResultsRow.style.display = totalMatches === 0 ? '' : 'none';
+  }
+
+  const startEl = document.getElementById('audit-page-start');
+  const endEl = document.getElementById('audit-page-end');
+  const totalEl = document.getElementById('audit-page-total');
+  if (startEl && endEl && totalEl) {
+    startEl.textContent = totalMatches === 0 ? '0' : String(startIndex + 1);
+    endEl.textContent = String(endIndex);
+    totalEl.textContent = String(totalMatches);
+  }
+
+  renderAuditPaginationButtons(totalPages, totalMatches);
+}
+
+function renderAuditPaginationButtons(totalPages, totalMatches) {
+  const prevBtn = document.getElementById('audit-btn-prev');
+  const nextBtn = document.getElementById('audit-btn-next');
+  const numbersContainer = document.getElementById('audit-page-numbers');
+
+  if (prevBtn) {
+    prevBtn.disabled = auditCurrentPage <= 1 || totalMatches === 0;
+  }
+  if (nextBtn) {
+    nextBtn.disabled = auditCurrentPage >= totalPages || totalMatches === 0;
+  }
+
+  if (!numbersContainer) return;
+  numbersContainer.innerHTML = '';
+
+  if (totalMatches === 0) {
+    const emptyBtn = document.createElement('button');
+    emptyBtn.type = 'button';
+    emptyBtn.className = 'page-num-btn active';
+    emptyBtn.textContent = '1';
+    emptyBtn.disabled = true;
+    numbersContainer.appendChild(emptyBtn);
+    return;
+  }
+
+  for (let p = 1; p <= totalPages; p++) {
+    if (
+      p === 1 ||
+      p === totalPages ||
+      (p >= auditCurrentPage - 1 && p <= auditCurrentPage + 1)
+    ) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = `page-num-btn ${p === auditCurrentPage ? 'active' : ''}`;
+      btn.textContent = String(p);
+      btn.onclick = () => goToAuditPage(p);
+      numbersContainer.appendChild(btn);
+    } else if (
+      (p === auditCurrentPage - 2 && p > 1) ||
+      (p === auditCurrentPage + 2 && p < totalPages)
+    ) {
+      const ellipsis = document.createElement('span');
+      ellipsis.className = 'page-ellipsis';
+      ellipsis.textContent = '…';
+      numbersContainer.appendChild(ellipsis);
+    }
+  }
+}
+
+function goToAuditPage(page) {
+  auditCurrentPage = page;
+  filterStaffAuditLogs();
+  const table = document.getElementById('staff-audit-table');
+  if (table) {
+    table.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
+
+function changeAuditPageSize(newSize) {
+  auditPageSize = parseInt(newSize, 10) || 10;
+  auditCurrentPage = 1;
+  filterStaffAuditLogs();
 }
 
 // ── 9. Item Modals (Log New & Edit) ─────────────────────────────────────────
@@ -708,10 +1140,21 @@ function openEditItemModal(item) {
   if (titleField) titleField.value = item.title || '';
   if (catField) catField.value = item.category_id || '';
   if (locField) locField.value = item.location_id || '';
-  if (statusField) statusField.value = item.item_status || 'stored';
+  
+  if (statusField) {
+    const isProc = item.storage_notes && item.storage_notes.toLowerCase().includes('processing');
+    const isClaimed = item.item_status === 'inactive' || (item.storage_notes && item.storage_notes.toLowerCase().includes('claimed'));
+    statusField.value = isProc ? 'processing' : (isClaimed ? 'claimed' : 'stored');
+  }
+
   if (descField) descField.value = item.description || '';
   if (serialField) serialField.value = item.serial_number || '';
-  if (storageField) storageField.value = item.storage_notes || '';
+  
+  if (storageField) {
+    let cleanNotes = item.storage_notes || '';
+    cleanNotes = cleanNotes.replace(/^Status:\s*(Stored|Processing|Claimed|Active)(\s*-\s*)?/i, '').trim();
+    storageField.value = cleanNotes;
+  }
 
   dialog.showModal();
 }
@@ -728,14 +1171,28 @@ async function submitEditItem(e) {
   const submitBtn = document.getElementById('btn-submit-edit-item');
   if (submitBtn) submitBtn.disabled = true;
 
+  const chosenStatus = form.item_status.value;
+  const isClaimed = chosenStatus === 'claimed';
+  const dbStatus = isClaimed ? 'inactive' : 'active';
+
+  let notes = form.storage_notes ? form.storage_notes.value.trim() : '';
+  notes = notes.replace(/^Status:\s*(Stored|Processing|Claimed|Active)(\s*-\s*)?/i, '').trim();
+
+  let tag = 'Stored';
+  if (chosenStatus === 'processing') tag = 'Processing';
+  else if (chosenStatus === 'claimed') tag = 'Claimed';
+  else tag = 'Stored';
+
+  const finalStorageNotes = notes ? `Status: ${tag} - ${notes}` : `Status: ${tag}`;
+
   const payload = {
     title: form.title.value.trim(),
     category_id: form.category_id.value ? Number(form.category_id.value) : null,
     location_id: form.location_id.value ? Number(form.location_id.value) : null,
-    item_status: form.item_status.value,
-    description: form.description ? form.description.value.trim() : null,
+    item_status: dbStatus,
+    description: form.description ? form.description.value.trim() || null : null,
     serial_number: form.serial_number ? form.serial_number.value.trim() || null : null,
-    storage_notes: form.storage_notes ? form.storage_notes.value.trim() : null,
+    storage_notes: finalStorageNotes,
   };
 
   try {
@@ -1030,3 +1487,34 @@ Officer Notes: ${verificationProof}`;
   }
 }
 
+// ── 12. Item Photograph Lightbox / Modal Preview ────────────────────────────
+function openThumbPreview(el) {
+  if (!el) return;
+  const imgUrl = el.getAttribute('data-img');
+  const title = el.getAttribute('data-title');
+  const refCode = el.getAttribute('data-ref');
+  openItemImagePreview(imgUrl, title, refCode);
+}
+
+function openItemImagePreview(imageUrl, title, refCode) {
+  if (!imageUrl) return;
+  const dialog = document.getElementById('image-preview-dialog');
+  const imgEl = document.getElementById('preview-modal-img');
+  const captionEl = document.getElementById('preview-modal-caption');
+  const refEl = document.getElementById('preview-modal-ref');
+
+  if (imgEl) imgEl.src = imageUrl;
+  if (captionEl) captionEl.textContent = title || 'Item Photograph';
+  if (refEl) refEl.textContent = refCode || '#FI-XXXX';
+
+  if (dialog && typeof dialog.showModal === 'function') {
+    dialog.showModal();
+  }
+}
+
+function closeItemImagePreview() {
+  const dialog = document.getElementById('image-preview-dialog');
+  if (dialog && typeof dialog.close === 'function') {
+    dialog.close();
+  }
+}

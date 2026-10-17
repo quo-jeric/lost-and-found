@@ -20,14 +20,16 @@ router.use((req, res, next) => {
 // GET / - Public Lost & Found Catalog
 router.get('/', async (req, res, next) => {
   try {
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const pageSize = 6;
     const [categories, locations, itemsResult] = await Promise.all([
       findAllCategories(pool).catch(() => []),
       findAllLocations(pool).catch(() => []),
-      listItems({}, { page: 1, pageSize: 24 }, { isPublic: true }).catch(() => ({
+      listItems({}, { page, pageSize }, { isPublic: true }).catch(() => ({
         items: [],
         total: 0,
-        page: 1,
-        pageSize: 24,
+        page,
+        pageSize,
       })),
     ]);
 
@@ -188,19 +190,19 @@ router.get('/dashboard', async (req, res, next) => {
     const [categories, locations, itemsResult, claimsResult, auditLogs, user] = await Promise.all([
       findAllCategories(pool).catch(() => []),
       findAllLocations(pool).catch(() => []),
-      listItems({}, { page: 1, pageSize: 50 }, { isPublic: false }).catch(() => ({
+      listItems({}, { page: 1, pageSize: 100 }, { isPublic: false }).catch(() => ({
         items: [],
         total: 0,
         page: 1,
-        pageSize: 50,
+        pageSize: 100,
       })),
-      listClaims({}, { page: 1, pageSize: 50 }, { actorId }).catch(() => ({
+      listClaims({}, { page: 1, pageSize: 100 }, { actorId }).catch(() => ({
         claims: [],
         total: 0,
         page: 1,
-        pageSize: 50,
+        pageSize: 100,
       })),
-      getLatestAuditLogs(pool, { limit: 50 }).catch(() => []),
+      getLatestAuditLogs(pool, { limit: 100 }).catch(() => []),
       findUserById(actorId).catch(() => null),
     ]);
 

@@ -245,14 +245,16 @@
         </div>
 
         <!-- Pagination Row -->
-        <div class="pagination-row">
-          <span>Page 1 of <%= (typeof meta !== 'undefined' && meta.total) ? Math.max(1, Math.ceil(meta.total / 9)) : 1 %> &bull; All categories</span>
-          <div class="pagination-controls">
-            <button type="button" class="page-nav-arrow" disabled>&lsaquo;</button>
-            <button type="button" class="page-num-btn active">1</button>
-            <button type="button" class="page-num-btn">2</button>
-            <button type="button" class="page-num-btn">3</button>
-            <button type="button" class="page-nav-arrow">&rsaquo;</button>
+        <div class="pagination-row" id="public-pagination-row"
+          data-page="<%= (typeof meta !== 'undefined' && meta.page) ? meta.page : 1 %>"
+          data-total="<%= (typeof meta !== 'undefined' && meta.total) ? meta.total : (items ? items.length : 0) %>"
+          data-page-size="<%= (typeof meta !== 'undefined' && meta.pageSize) ? meta.pageSize : 6 %>"
+        >
+          <span id="public-pagination-info">
+            Page <%= (typeof meta !== 'undefined' && meta.page) ? meta.page : 1 %> of <%= (typeof meta !== 'undefined' && meta.total) ? Math.max(1, Math.ceil(meta.total / (meta.pageSize || 6))) : 1 %> &bull; <%= (typeof meta !== 'undefined' && meta.total) ? meta.total : (items ? items.length : 0) %> items recorded
+          </span>
+          <div class="pagination-controls" id="public-pagination-controls">
+            <!-- Dynamically populated via JS -->
           </div>
         </div>
 

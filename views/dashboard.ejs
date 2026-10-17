@@ -280,8 +280,25 @@
                   <% items.forEach(item => { %>
                     <% 
                       const isProcessing = item.storage_notes && item.storage_notes.toLowerCase().includes('processing');
+                      const isClaimed = item.item_status === 'inactive' || (item.storage_notes && item.storage_notes.toLowerCase().includes('claimed'));
                       const isStored = item.storage_notes && item.storage_notes.toLowerCase().includes('stored');
-                      const rowStatus = isProcessing ? 'processing' : (isStored ? 'stored' : (item.item_status === 'inactive' ? 'claimed' : item.item_status.toLowerCase()));
+                      
+                      let statusKey = 'active';
+                      let statusText = 'Active';
+                      if (isClaimed) {
+                        statusKey = 'claimed';
+                        statusText = 'Claimed';
+                      } else if (isProcessing) {
+                        statusKey = 'processing';
+                        statusText = 'Processing';
+                      } else if (isStored) {
+                        statusKey = 'stored';
+                        statusText = 'Stored';
+                      } else {
+                        statusKey = 'active';
+                        statusText = 'Active';
+                      }
+                      const rowStatus = statusKey;
                     %>
                     <tr 
                       id="row-item-<%= item.item_id %>" 
@@ -292,16 +309,44 @@
                       data-serial="<%= (item.serial_number || '').toLowerCase() %>"
                       data-finder="<%= (item.finder_name || '').toLowerCase() %>"
                     >
-                      <td class="font-mono text-xs">#FI-<%= String(item.item_id).padStart(4, '0') %></td>
+                      <td class="font-mono text-xs font-semibold" style="color: #475569;">#FI-<%= String(item.item_id).padStart(4, '0') %></td>
                       <td>
-                        <div class="flex items-center gap-2">
-                          <% if (item.image_url) { %>
-                            <img src="<%= item.image_url %>" alt="" class="table-thumb" onerror="this.style.display='none';">
-                          <% } %>
-                          <div>
-                            <span style="font-weight: 600; color: #0F172A;"><%= item.title %></span>
+                        <div class="table-item-cell">
+                          <div class="table-thumb-box <%= item.image_url ? 'has-image' : '' %>"
+                            <% if (item.image_url) { %>
+                              data-img="<%= item.image_url %>"
+                              data-title="<%= item.title %>"
+                              data-ref="#FI-<%= String(item.item_id).padStart(4, '0') %>"
+                              onclick="openThumbPreview(this)"
+                              role="button"
+                              tabindex="0"
+                              onkeydown="if(event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openThumbPreview(this); }"
+                              title="Click to preview photograph"
+                            <% } %>
+                          >
+                            <% if (item.image_url) { %>
+                              <img src="<%= item.image_url %>" alt="<%= item.title %>" class="table-thumb" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                              <div class="table-thumb-fallback" style="display: none;">
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8">
+                                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                  <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                                  <polyline points="21 15 16 10 5 21"></polyline>
+                                </svg>
+                              </div>
+                            <% } else { %>
+                              <div class="table-thumb-fallback" title="No photograph available">
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8">
+                                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                  <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                                  <polyline points="21 15 16 10 5 21"></polyline>
+                                </svg>
+                              </div>
+                            <% } %>
+                          </div>
+                          <div class="table-item-meta">
+                            <span class="table-item-title"><%= item.title %></span>
                             <% if (item.serial_number) { %>
-                              <div class="font-mono text-xs" style="color: #64748B;">SN: <%= item.serial_number %></div>
+                              <div class="table-item-serial">SN: <%= item.serial_number %></div>
                             <% } %>
                           </div>
                         </div>
@@ -310,53 +355,20 @@
                       <td class="text-sm" style="color: #475569;"><%= item.location_name || '#' + item.location_id %></td>
                       <td class="text-sm" style="color: #64748B;"><%= new Date(item.found_at).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }) %></td>
                       <td>
-                        <% if (isProcessing) { %>
-                          <span class="status-pill-subtle processing" style="padding: 4px 10px; border-radius: 9999px; font-weight: 600; font-size: 0.75rem; display: inline-block;">Processing</span>
-                        <% } else if (isStored) { %>
-                          <span class="status-pill-subtle stored" style="padding: 4px 10px; border-radius: 9999px; font-weight: 600; font-size: 0.75rem; display: inline-block;">Stored</span>
-                        <% } else { %>
-                          <span class="status-badge status-<%= item.item_status %>">
-                            <%= item.item_status.toUpperCase() %>
-                          </span>
-                        <% } %>
+                        <span class="status-pill-subtle <%= statusKey %>"><%= statusText %></span>
                       </td>
                       <td class="text-sm text-muted"><%= item.finder_name %></td>
                       <td class="text-right">
-                        <div class="inline-flex gap-1">
-                          <% if (item.item_status === 'active') { %>
-                            <button 
-                              type="button" 
-                              class="btn btn-ghost btn-sm text-cyan" 
-                              onclick="openInPersonClaimModal(<%= JSON.stringify(item) %>)"
-                              title="Verify Credential & Release Item to Claimant"
-                              style="color: #0284C7; font-weight: 600;"
-                            >
-                              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-                              <span>Claim</span>
-                            </button>
-                          <% } %>
-                          
+                        <div class="table-actions-group">
                           <button 
                             type="button" 
-                            class="btn btn-ghost btn-sm" 
+                            class="btn-action-edit" 
                             onclick="openEditItemModal(<%= JSON.stringify(item) %>)"
                             title="Edit Item Details"
                           >
-                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
                             <span>Edit</span>
                           </button>
-                          
-                          <% if (role === 'admin') { %>
-                            <button 
-                              type="button" 
-                              class="btn btn-ghost btn-sm text-rose" 
-                              onclick="archiveItemHandler(<%= item.item_id %>)"
-                              title="Soft-Archive Item (No Physical Deletes)"
-                            >
-                              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                              <span>Archive</span>
-                            </button>
-                          <% } %>
                         </div>
                       </td>
                     </tr>
@@ -366,8 +378,52 @@
                     <td colspan="8" class="text-center py-8 text-muted">No items recorded in inventory yet.</td>
                   </tr>
                 <% } %>
+                <tr id="inventory-no-results-row" style="display: none;">
+                  <td colspan="8" class="text-center py-8 text-muted">
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; padding: 1.5rem 0;">
+                      <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="#94A3B8" stroke-width="1.8"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                      <span style="font-weight: 500; color: #475569;">No items match your search or filter criteria.</span>
+                      <button type="button" class="btn btn-sm btn-ghost" onclick="resetStaffInventoryFilters()" style="margin-top: 0.25rem;">Clear Filters</button>
+                    </div>
+                  </td>
+                </tr>
               </tbody>
             </table>
+          </div>
+
+          <!-- Item Inventory Pagination Footer -->
+          <div class="table-pagination-footer" id="inventory-pagination-footer">
+            <div class="pagination-info" id="inventory-pagination-info">
+              Showing <span id="inv-page-start">1</span>–<span id="inv-page-end">5</span> of <span id="inv-page-total"><%= items ? items.length : 0 %></span> items
+            </div>
+
+            <div class="pagination-actions">
+              <div class="pagination-page-size-wrap">
+                <label for="inventory-page-size" class="text-xs text-muted">Per page:</label>
+                <div class="custom-filter-dropdown-wrap" style="width: auto;">
+                  <select id="inventory-page-size" class="admin-page-size-select" onchange="changeInventoryPageSize(this.value)">
+                    <option value="5" selected>5</option>
+                    <option value="10">10</option>
+                    <option value="20">20</option>
+                  </select>
+                  <svg class="select-chevron-sm" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </div>
+              </div>
+
+              <div class="pagination-nav-group" id="inventory-pagination-nav">
+                <button type="button" class="pagination-nav-btn prev" id="inv-btn-prev" onclick="goToInventoryPage(invCurrentPage - 1)" title="Previous page">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                  <span>Prev</span>
+                </button>
+                <div class="pagination-page-numbers" id="inventory-page-numbers">
+                  <!-- Generated via JS -->
+                </div>
+                <button type="button" class="pagination-nav-btn next" id="inv-btn-next" onclick="goToInventoryPage(invCurrentPage + 1)" title="Next page">
+                  <span>Next</span>
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -392,7 +448,7 @@
             <div class="table-actions-cluster">
               <div class="table-search-input-wrap">
                 <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                <input type="text" id="staff-claim-search" class="admin-search-field" placeholder="Search claimant, claim ID, item ref..." oninput="filterStaffClaims()">
+                <input type="text" id="staff-claim-search" class="admin-search-field" placeholder="Search claimant, claim ID, item ref..." oninput="claimsCurrentPage=1; filterStaffClaims()">
               </div>
 
               <div class="filter-pill-selector" role="tablist" aria-label="Filter claims by status">
@@ -503,8 +559,51 @@
                     <td colspan="7" class="text-center py-8 text-muted">No claims received yet.</td>
                   </tr>
                 <% } %>
+                <tr id="claims-no-results-row" style="display: none;">
+                  <td colspan="7" class="text-center py-8 text-muted">
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; padding: 1.5rem 0;">
+                      <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="#94A3B8" stroke-width="1.8"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                      <span style="font-weight: 500; color: #475569;">No claims match your search or filter criteria.</span>
+                    </div>
+                  </td>
+                </tr>
               </tbody>
             </table>
+          </div>
+
+          <!-- Claims Pagination Footer -->
+          <div class="table-pagination-footer" id="claims-pagination-footer">
+            <div class="pagination-info" id="claims-pagination-info">
+              Showing <span id="claims-page-start">1</span>–<span id="claims-page-end">5</span> of <span id="claims-page-total"><%= claims ? claims.length : 0 %></span> claims
+            </div>
+
+            <div class="pagination-actions">
+              <div class="pagination-page-size-wrap">
+                <label for="claims-page-size" class="text-xs text-muted">Per page:</label>
+                <div class="custom-filter-dropdown-wrap" style="width: auto;">
+                  <select id="claims-page-size" class="admin-page-size-select" onchange="changeClaimsPageSize(this.value)">
+                    <option value="5" selected>5</option>
+                    <option value="10">10</option>
+                    <option value="20">20</option>
+                  </select>
+                  <svg class="select-chevron-sm" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </div>
+              </div>
+
+              <div class="pagination-nav-group" id="claims-pagination-nav">
+                <button type="button" class="pagination-nav-btn prev" id="claims-btn-prev" onclick="goToClaimsPage(claimsCurrentPage - 1)" title="Previous page">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                  <span>Prev</span>
+                </button>
+                <div class="pagination-page-numbers" id="claims-page-numbers">
+                  <!-- Generated via JS -->
+                </div>
+                <button type="button" class="pagination-nav-btn next" id="claims-btn-next" onclick="goToClaimsPage(claimsCurrentPage + 1)" title="Next page">
+                  <span>Next</span>
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -517,8 +616,11 @@
               <h2 class="table-title">System Transactional Audit Trail</h2>
               <span class="text-xs text-muted">Immutable, append-only security logs for chain of custody and staff verification.</span>
             </div>
-            <div class="table-actions">
-              <input type="text" id="staff-audit-search" class="form-input form-input-sm" placeholder="Filter audit trail..." onkeyup="filterStaffAuditLogs(this.value)">
+            <div class="table-actions-cluster">
+              <div class="table-search-input-wrap">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <input type="text" id="staff-audit-search" class="admin-search-field" placeholder="Filter audit trail by action, actor, entity..." oninput="auditCurrentPage=1; filterStaffAuditLogs(this.value)">
+              </div>
             </div>
           </div>
 
@@ -572,8 +674,51 @@
                     <td colspan="6" class="text-center py-8 text-muted">No audit transactions logged yet.</td>
                   </tr>
                 <% } %>
+                <tr id="audit-no-results-row" style="display: none;">
+                  <td colspan="6" class="text-center py-8 text-muted">
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; padding: 1.5rem 0;">
+                      <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="#94A3B8" stroke-width="1.8"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                      <span style="font-weight: 500; color: #475569;">No audit logs match your search.</span>
+                    </div>
+                  </td>
+                </tr>
               </tbody>
             </table>
+          </div>
+
+          <!-- Audit Trail Pagination Footer -->
+          <div class="table-pagination-footer" id="audit-pagination-footer">
+            <div class="pagination-info" id="audit-pagination-info">
+              Showing <span id="audit-page-start">1</span>–<span id="audit-page-end">10</span> of <span id="audit-page-total"><%= (typeof auditLogs !== 'undefined' && auditLogs) ? auditLogs.length : 0 %></span> logs
+            </div>
+
+            <div class="pagination-actions">
+              <div class="pagination-page-size-wrap">
+                <label for="audit-page-size" class="text-xs text-muted">Per page:</label>
+                <div class="custom-filter-dropdown-wrap" style="width: auto;">
+                  <select id="audit-page-size" class="admin-page-size-select" onchange="changeAuditPageSize(this.value)">
+                    <option value="10" selected>10</option>
+                    <option value="20">20</option>
+                    <option value="50">50</option>
+                  </select>
+                  <svg class="select-chevron-sm" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </div>
+              </div>
+
+              <div class="pagination-nav-group" id="audit-pagination-nav">
+                <button type="button" class="pagination-nav-btn prev" id="audit-btn-prev" onclick="goToAuditPage(auditCurrentPage - 1)" title="Previous page">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                  <span>Prev</span>
+                </button>
+                <div class="pagination-page-numbers" id="audit-page-numbers">
+                  <!-- Generated via JS -->
+                </div>
+                <button type="button" class="pagination-nav-btn next" id="audit-btn-next" onclick="goToAuditPage(auditCurrentPage + 1)" title="Next page">
+                  <span>Next</span>
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -934,6 +1079,39 @@
         <span>Approve & Release Item</span>
       </button>
     </div>
+  </div>
+</dialog>
+
+<!-- Modal: Item Photo Preview (<dialog>) -->
+<dialog id="image-preview-dialog" class="custom-dialog md" aria-labelledby="dialog-image-preview-title">
+  <div class="dialog-header">
+    <div style="display: flex; align-items: center; gap: 0.75rem;">
+      <div class="dialog-header-crest">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#2563EB" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          <circle cx="8.5" cy="8.5" r="1.5"></circle>
+          <polyline points="21 15 16 10 5 21"></polyline>
+        </svg>
+      </div>
+      <div>
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <h2 id="dialog-image-preview-title" class="dialog-title" style="margin: 0; font-size: 1.15rem;">Item Photograph</h2>
+          <span class="claim-ref-tag" id="preview-modal-ref">#FI-0000</span>
+        </div>
+        <p class="dialog-subtitle-text" id="preview-modal-caption">High-resolution catalog photograph</p>
+      </div>
+    </div>
+    <button type="button" class="btn-close-dialog" onclick="closeItemImagePreview()" aria-label="Close dialog">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+    </button>
+  </div>
+  <div class="dialog-body" style="padding: 1.25rem; display: flex; flex-direction: column; align-items: center;">
+    <div style="width: 100%; max-height: 480px; background: #0B1120; border-radius: 12px; overflow: hidden; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 2px 8px rgba(0,0,0,0.4); border: 1px solid #1E293B;">
+      <img id="preview-modal-img" src="" alt="Item photo" style="max-width: 100%; max-height: 480px; object-fit: contain; display: block;">
+    </div>
+  </div>
+  <div class="dialog-footer" style="display: flex; justify-content: flex-end;">
+    <button type="button" class="btn btn-outline" onclick="closeItemImagePreview()">Close</button>
   </div>
 </dialog>
 

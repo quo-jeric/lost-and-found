@@ -117,7 +117,25 @@ export async function updateItemHandler(req, res, next) {
       ipAddress: req.ip ?? null,
     };
 
-    const item = await itemsService.editItem(req.params.id, req.body ?? {}, context);
+    const payload = { ...(req.body ?? {}) };
+
+    // Normalize custody status values (stored, processing, claimed) to database ENUM ('active', 'inactive')
+    if (payload.item_status) {
+      const s = String(payload.item_status).toLowerCase().trim();
+      if (s === 'stored' || s === 'processing') {
+        const tag = s.charAt(0).toUpperCase() + s.slice(1);
+        if (!payload.storage_notes || !payload.storage_notes.toLowerCase().includes(s)) {
+          payload.storage_notes = payload.storage_notes 
+            ? `Status: ${tag} - ${payload.storage_notes}` 
+            : `Status: ${tag}`;
+        }
+        payload.item_status = 'active';
+      } else if (s === 'claimed') {
+        payload.item_status = 'inactive';
+      }
+    }
+
+    const item = await itemsService.editItem(req.params.id, payload, context);
 
     return res.status(200).json({ data: item });
   } catch (err) {
