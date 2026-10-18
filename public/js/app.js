@@ -6,8 +6,76 @@
 // Active selected item in the details panel
 let currentSelectedItem = null;
 
+// ── Sidebar Toggle (Desktop / Tablet) ─────────────────────────────────────
+const SIDEBAR_KEY = 'cspc_sidebar_collapsed';
+
+function toggleSidebar() {
+  const sidebar = document.querySelector('.sidebar');
+  if (!sidebar) return;
+  const isCollapsed = sidebar.classList.toggle('sidebar-collapsed');
+  localStorage.setItem(SIDEBAR_KEY, isCollapsed ? '1' : '0');
+}
+
+function toggleAdminSidebar() {
+  const sidebar = document.querySelector('.admin-sidebar');
+  if (!sidebar) return;
+  const isCollapsed = sidebar.classList.toggle('sidebar-collapsed');
+  localStorage.setItem(SIDEBAR_KEY, isCollapsed ? '1' : '0');
+}
+
+// ── Mobile Bottom Sheet ────────────────────────────────────────────────────
+function openMobileSheet() {
+  const sheet = document.getElementById('mobile-item-sheet');
+  const overlay = document.getElementById('mobile-sheet-overlay');
+  if (!sheet || !overlay) return;
+  // Only open on mobile viewport
+  if (window.innerWidth > 768) return;
+  overlay.classList.add('open');
+  sheet.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeMobileSheet() {
+  const sheet = document.getElementById('mobile-item-sheet');
+  const overlay = document.getElementById('mobile-sheet-overlay');
+  if (!sheet || !overlay) return;
+  sheet.classList.remove('open');
+  overlay.classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function populateMobileSheet(item) {
+  const refCode = `FI-${String(item.item_id).padStart(4, '0')}`;
+  const catCode = item.category_id ? `CAT-${String(item.category_id).padStart(3, '0')} · ` : '';
+
+  const title = document.getElementById('sheet-item-title');
+  const ref = document.getElementById('sheet-item-ref');
+  const cat = document.getElementById('sheet-item-category');
+  const type = document.getElementById('sheet-item-type');
+  const appearance = document.getElementById('sheet-item-appearance');
+  const location = document.getElementById('sheet-item-location');
+  const date = document.getElementById('sheet-item-date');
+  const finder = document.getElementById('sheet-item-finder');
+
+  if (title) title.textContent = item.title;
+  if (ref) ref.textContent = refCode;
+  if (cat) cat.textContent = `${catCode}${item.category_name || 'General Valuables'}`;
+  if (type) type.textContent = item.brand || 'Personal Item';
+  if (appearance) appearance.textContent = item.description || (item.color ? `${item.color} finish` : 'In good physical condition');
+  if (location) location.textContent = item.location_name || 'Main Campus Grounds';
+  if (date) date.textContent = new Date(item.found_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  if (finder) finder.textContent = item.finder_name || 'Juan Reyes';
+}
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
+  // Restore sidebar collapsed state from localStorage
+  const sidebarCollapsed = localStorage.getItem(SIDEBAR_KEY) === '1';
+  if (sidebarCollapsed && window.innerWidth > 768) {
+    const sidebar = document.querySelector('.sidebar, .admin-sidebar');
+    if (sidebar) sidebar.classList.add('sidebar-collapsed');
+  }
+
   const firstCard = document.querySelector('.found-item-card');
   if (firstCard) {
     // If cards exist, ensure the first is active
@@ -45,7 +113,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const pageSize = parseInt(publicRow.getAttribute('data-page-size'), 10) || 6;
     renderPublicPagination({ page, total, pageSize });
   }
+
+  // Close bottom sheet on Escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeMobileSheet();
+  });
 });
+
+
 
 // ── 1. Card Selection & Side Panel Synchronization ─────────────────────────
 function selectCardItem(item, cardEl) {
@@ -87,6 +162,12 @@ function selectCardItem(item, cardEl) {
   if (claimItemId) claimItemId.value = item.item_id;
   if (claimSummaryRef) claimSummaryRef.textContent = refCode;
   if (claimSummaryTitle) claimSummaryTitle.textContent = item.title;
+
+  // On mobile: populate and open the bottom sheet instead of the hidden side panel
+  if (window.innerWidth <= 768) {
+    populateMobileSheet(item);
+    openMobileSheet();
+  }
 }
 
 let publicCurrentPage = 1;
@@ -422,9 +503,9 @@ async function handleModalLogin(e) {
       throw new Error(json.error?.message || 'Invalid credentials');
     }
 
-    showToast('Authorized! Redirecting to staff dashboard...', 'success');
+    showToast('Authorized! Redirecting to Add Item...', 'success');
     setTimeout(() => {
-      window.location.href = '/dashboard';
+      window.location.href = '/admin/found-items/new';
     }, 600);
   } catch (err) {
     showToast(err.message, 'error');
@@ -533,6 +614,17 @@ function switchDashboardTab(tabName) {
   });
   const sideLink = document.getElementById(`side-link-${tabName}`);
   if (sideLink) sideLink.classList.add('active');
+
+  // Keep the mobile navigation selection in sync with the active dashboard tab.
+  document.querySelectorAll('.mobile-bottom-tab-bar .mob-tab-item').forEach((link) => {
+    link.classList.remove('active');
+    link.removeAttribute('aria-current');
+  });
+  const mobileTab = document.getElementById(`mob-tab-${tabName}`);
+  if (mobileTab) {
+    mobileTab.classList.add('active');
+    mobileTab.setAttribute('aria-current', 'page');
+  }
 
   // Update Topbar Breadcrumb Text
   const breadcrumb = document.getElementById('topbar-breadcrumb-title');

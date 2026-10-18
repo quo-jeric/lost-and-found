@@ -312,8 +312,8 @@ All migrations are tracked in `schema_migrations` with SHA-256 checksums. Applie
 - Total test suite: **143/143 tests passing** (19 auth + 46 items + 61 claims + 9 item-ctrl + 8 claim-ctrl).
 
 ### Milestone 7: UI Design Implementation & EJS View Engine Integration
-- Fixed [server.js](file:///media/nyaaxie/STORAGE/Documents/My%20Files%20-%20Brizuela/My%20Projects/lost_and_found/lost-and-found/server.js) entrypoint to import configured `app` from [app.js](file:///media/nyaaxie/STORAGE/Documents/My%20Files%20-%20Brizuela/My%20Projects/lost_and_found/lost-and-found/app.js) and start HTTP server with DB health verification.
-- Added EJS templating engine and static asset serving in [app.js](file:///media/nyaaxie/STORAGE/Documents/My%20Files%20-%20Brizuela/My%20Projects/lost_and_found/lost-and-found/app.js) (`views/` and `public/`).
+- Fixed [server.js](./server.js) entrypoint to import configured `app` from [app.js](./app.js) and start HTTP server with DB health verification.
+- Added EJS templating engine and static asset serving in [app.js](./app.js) (`views/` and `public/`).
 - Created repositories & API lookup routes:
   - `repositories/category-repository.js` and `GET /api/v1/categories`.
   - `repositories/location-repository.js` and `GET /api/v1/locations`.
@@ -569,18 +569,18 @@ All migrations are tracked in `schema_migrations` with SHA-256 checksums. Applie
   - Standardized static brand assets under `public/images/` (`public/images/CSPCLogo.jpeg` and `public/images/cspc-logo.jpeg`).
   - Separated institutional assets from user/item custody uploads (`public/uploads/items/`).
 - **Dashboard & App-Wide Branding Integration**:
-  - Integrated the official `CSPCLogo.jpeg` into the Dashboard sidebar branding ([`views/dashboard.ejs`](file:///media/nyaaxie/STORAGE/Documents/My%20Files%20-%20Brizuela/My%20Projects/lost_and_found/lost-and-found/views/dashboard.ejs)) and Admin Add Item console ([`views/admin/add-item.ejs`](file:///media/nyaaxie/STORAGE/Documents/My%20Files%20-%20Brizuela/My%20Projects/lost_and_found/lost-and-found/views/admin/add-item.ejs)).
-  - Also connected to the Public Catalog sidebar ([`views/index.ejs`](file:///media/nyaaxie/STORAGE/Documents/My%20Files%20-%20Brizuela/My%20Projects/lost_and_found/lost-and-found/views/index.ejs)) and Staff Login portal ([`views/login.ejs`](file:///media/nyaaxie/STORAGE/Documents/My%20Files%20-%20Brizuela/My%20Projects/lost_and_found/lost-and-found/views/login.ejs)).
+  - Integrated the official `CSPCLogo.jpeg` into the Dashboard sidebar branding ([`views/dashboard.ejs`](./views/dashboard.ejs)) and Admin Add Item console ([`views/admin/add-item.ejs`](./views/admin/add-item.ejs)).
+  - Also connected to the Public Catalog sidebar ([`views/index.ejs`](./views/index.ejs)) and Staff Login portal ([`views/login.ejs`](./views/login.ejs)).
   - Added `.brand-crest-img` CSS with `object-fit: cover` and resilient fallback to shield SVG on error.
 - **Testing & Verification**:
   - All 143 unit tests passing (`npm test`).
   - Zero physical delete check passed (`npm run check:no-delete`).
 
 ### Milestone 22: Modern Enterprise UI Redesign for Inventory Filtering, Claims Queue & "Inspect & View" Dossier Modal
-- **Inventory Filter Toolbar Redesign** ([`views/dashboard.ejs`](file:///media/nyaaxie/STORAGE/Documents/My%20Files%20-%20Brizuela/My%20Projects/lost_and_found/lost-and-found/views/dashboard.ejs)):
+- **Inventory Filter Toolbar Redesign** ([`views/dashboard.ejs`](./views/dashboard.ejs)):
   - Replaced legacy text filter with a comprehensive `.table-actions-cluster` toolbar.
   - Added modern search field with embedded search icon (`#staff-item-search`), custom category dropdown (`#staff-item-category-filter`), custody status dropdown (`#staff-item-status-filter`), one-click filter reset button (`.btn-reset-filters`), and quick "Log Item" primary action.
-  - Implemented multi-attribute client-side filtering (`runStaffInventoryFilter()` and `resetStaffInventoryFilters()` in [`public/js/app.js`](file:///media/nyaaxie/STORAGE/Documents/My%20Files%20-%20Brizuela/My%20Projects/lost_and_found/lost-and-found/public/js/app.js)) matching title, serial number, category, finder name, and storage status with dynamic item counter updates.
+  - Implemented multi-attribute client-side filtering (`runStaffInventoryFilter()` and `resetStaffInventoryFilters()` in [`public/js/app.js`](./public/js/app.js)) matching title, serial number, category, finder name, and storage status with dynamic item counter updates.
 - **Claims Verification Queue & "Pending Verification" Pill Styling**:
   - Replaced plain select dropdown with fast interactive status pill selectors (`All`, `Pending`, `Approved`, `Rejected`) with dynamic badge counters.
   - Designed modern status badge pills:
@@ -634,29 +634,78 @@ All migrations are tracked in `schema_migrations` with SHA-256 checksums. Applie
 
 ### Milestone 25: Dashboard-Wide Unified Pagination, Status Unification & Custody Fix
 - **Unified Pagination System Across All Dashboard Tabs**:
-  - **Item Inventory** ([`views/dashboard.ejs`](file:///media/nyaaxie/STORAGE/Documents/My%20Files%20-%20Brizuela/My%20Projects/lost_and_found/lost-and-found/views/dashboard.ejs#L395)): Default **5 items per page** (expandable to 10 or 20 items per page via dropdown), live search & status filter integration, and clear `#inventory-no-results-row`.
-  - **Claims Verification** ([`views/dashboard.ejs`](file:///media/nyaaxie/STORAGE/Documents/My%20Files%20-%20Brizuela/My%20Projects/lost_and_found/lost-and-found/views/dashboard.ejs#L575)): Default **5 claims per page** (expandable to 10 or 20), status pill filter tabs (`All`, `Pending`, `Approved`, `Rejected`), live search, and `#claims-no-results-row`.
-  - **Audit Trail** ([`views/dashboard.ejs`](file:///media/nyaaxie/STORAGE/Documents/My%20Files%20-%20Brizuela/My%20Projects/lost_and_found/lost-and-found/views/dashboard.ejs#L687)): Default **10 logs per page** (expandable to 20 or 50), live action/actor search, and `#audit-no-results-row`. Prevents 50+ logs from creating an excessively tall page.
-  - Standardized `.table-pagination-footer` in [`public/css/style.css`](file:///media/nyaaxie/STORAGE/Documents/My%20Files%20-%20Brizuela/My%20Projects/lost_and_found/lost-and-found/public/css/style.css): Dynamic readouts (`Showing X–Y of Z items/claims/logs`), `Prev`, numeric page buttons (`1`, `2`, `...`), and `Next` with active states and disabled boundaries.
+  - **Item Inventory** ([`views/dashboard.ejs`](./views/dashboard.ejs#L395)): Default **5 items per page** (expandable to 10 or 20 items per page via dropdown), live search & status filter integration, and clear `#inventory-no-results-row`.
+  - **Claims Verification** ([`views/dashboard.ejs`](./views/dashboard.ejs#L575)): Default **5 claims per page** (expandable to 10 or 20), status pill filter tabs (`All`, `Pending`, `Approved`, `Rejected`), live search, and `#claims-no-results-row`.
+  - **Audit Trail** ([`views/dashboard.ejs`](./views/dashboard.ejs#L687)): Default **10 logs per page** (expandable to 20 or 50), live action/actor search, and `#audit-no-results-row`. Prevents 50+ logs from creating an excessively tall page.
+  - Standardized `.table-pagination-footer` in [`public/css/style.css`](./public/css/style.css): Dynamic readouts (`Showing X–Y of Z items/claims/logs`), `Prev`, numeric page buttons (`1`, `2`, `...`), and `Next` with active states and disabled boundaries.
   - Automatically resets to Page 1 when searching or applying filter pills.
 - **Status Design Consistency & Ledger Streamlining**:
   - Standardized `.status-pill-subtle` across all states (`Active`, `Stored`, `Processing`, `Claimed`).
   - Removed redundant `Claim` button from Item Inventory table; claims workflow is consolidated in the dedicated Claims Verification tab.
-  - Resolved HTTP 400 Bad Request error on item updates by normalizing custodial values in both [`controllers/item-controller.js`](file:///media/nyaaxie/STORAGE/Documents/My%20Files%20-%20Brizuela/My%20Projects/lost_and_found/lost-and-found/controllers/item-controller.js) and [`public/js/app.js`](file:///media/nyaaxie/STORAGE/Documents/My%20Files%20-%20Brizuela/My%20Projects/lost_and_found/lost-and-found/public/js/app.js).
+  - Resolved HTTP 400 Bad Request error on item updates by normalizing custodial values in both [`controllers/item-controller.js`](./controllers/item-controller.js) and [`public/js/app.js`](./public/js/app.js).
 - **Testing & Verification**:
   - All 143 unit tests passing (`npm test`).
 
 ### Milestone 26: Audit Search Input Redesign & Public View Dynamic Pagination
-- **Audit Trail Search Input Redesign** ([`views/dashboard.ejs`](file:///media/nyaaxie/STORAGE/Documents/My%20Files%20-%20Brizuela/My%20Projects/lost_and_found/lost-and-found/views/dashboard.ejs#L616)):
+- **Audit Trail Search Input Redesign** ([`views/dashboard.ejs`](./views/dashboard.ejs#L616)):
   - Replaced the plain, unstyled text input (`.form-input.form-input-sm`) with the institutional `.table-search-input-wrap` and `.admin-search-field` containing an inline SVG search magnifying glass icon.
   - Matches the sleek modern design of Item Inventory and Claims Verification search fields.
-- **Public Catalog Dynamic Pagination** ([`views/index.ejs`](file:///media/nyaaxie/STORAGE/Documents/My%20Files%20-%20Brizuela/My%20Projects/lost_and_found/lost-and-found/views/index.ejs#L248), [`routes/web-routes.js`](file:///media/nyaaxie/STORAGE/Documents/My%20Files%20-%20Brizuela/My%20Projects/lost_and_found/lost-and-found/routes/web-routes.js#L23), [`public/js/app.js`](file:///media/nyaaxie/STORAGE/Documents/My%20Files%20-%20Brizuela/My%20Projects/lost_and_found/lost-and-found/public/js/app.js#L90)):
+- **Public Catalog Dynamic Pagination** ([`views/index.ejs`](./views/index.ejs#L248), [`routes/web-routes.js`](./routes/web-routes.js#L23), [`public/js/app.js`](./public/js/app.js#L90)):
   - Converted the previously static, hardcoded dummy buttons (`1`, `2`, `3`) into a fully functional dynamic pagination system.
   - Set default catalog page size to 6 cards per page with backend query support (`/api/v1/items?page=X&pageSize=6`).
   - Added interactive `renderPublicPagination()`: generates `Prev` (`‹`), numeric buttons (`1`, `2`, ...), `Next` (`›`), and updates the summary label (e.g. `Page 1 of 2 • 8 items recorded`).
   - Integrated `goToPublicPage()` with smooth scroll to catalog header upon page transitions.
 - **Testing & Verification**:
   - All 143 unit tests passing (`npm test`).
+
+### Milestone 27: Centered Add Item Tab & Consistent Audit Navigation
+- **Mobile Add Item Tab Positioning**:
+  - Reordered the admin dashboard and Add Item mobile tab bars so `Add Item` sits in the middle, between `Inventory` and `Claims`.
+  - Adjusted `.mob-tab-item.accent-tab` in [`public/css/style.css`] to give the prominent tab modest extra width while preserving the responsive tab-bar layout.
+- **Audit Navigation Consistency** ([`views/admin/add-item.ejs`](./views/admin/add-item.ejs)):
+  - Added the missing `Audit Trail` link to both the desktop sidebar and mobile bottom tab bar on the Add Item screen.
+  - This fixes the mismatch where Audit was unavailable from Add Item and appeared again only after navigating to Inventory/dashboard.
+- **Testing & Verification**:
+  - Verified the Add Item template contains the desktop and mobile Audit links and the dashboard Add Item tab remains centered in the admin mobile navigation.
+
+### Milestone 28: Claims/Add Item Order & Reliable Mobile Active State
+- **Mobile Navigation Order**:
+  - Swapped the `Claims` and `Add Item` tab order on both the dashboard and Add Item mobile navigation; the sequence is now `Inventory`, `Claims`, `Add Item`, `Audit`, `Sign Out`.
+- **Active Tab Highlighting**:
+  - Updated `switchDashboardTab()` in [`public/js/app.js`](./public/js/app.js) to update the mobile tab’s `active` class and `aria-current` state whenever a dashboard tab changes, including changes initiated from desktop navigation.
+  - Strengthened the selected mobile tab background and preserved white label/indicator contrast when the Add Item accent tab is active in [`public/css/style.css`](./public/css/style.css).
+  - Added the current-page accessibility state to the server-rendered dashboard mobile tab.
+- **Testing & Verification**:
+  - Verified the tab order and active-state updates in the affected templates and client controller; JavaScript syntax and whitespace checks passed.
+
+### Milestone 29: Public Mobile Navigation Clickability & Staff Add Item Default
+- **Public Mobile Tab Click Fix**:
+  - Fixed the mobile bottom-sheet overlay in [`public/css/style.css`](./public/css/style.css): it was rendered transparent but remained hit-testable while the item details sheet was closed, blocking the public navigation tabs.
+  - The overlay now displays only while the mobile item details sheet is open, keeping Browse, How to Claim, About, and Staff Access clickable.
+- **Staff Login Default Destination**:
+  - Updated web login redirects in [`routes/web-routes.js`](./routes/web-routes.js) so admins and guards land on `/admin/found-items/new` after login, and authenticated staff visiting `/login` are sent there too.
+  - Updated the public catalog staff links in [`views/index.ejs`](./views/index.ejs) and the public login modal redirect in [`public/js/app.js`](./public/js/app.js) to use the same Add Item destination.
+  - Existing explicitly requested, safe local redirect URLs remain honored.
+- **Testing & Verification**:
+  - Validated mobile overlay visibility and public tab interactions in the browser; JavaScript syntax, template compilation, and diff whitespace checks passed.
+  - All 143 unit tests passed (`npm test`).
+
+### Milestone 30: Desktop Sidebar Hamburger Availability
+- **Responsive Sidebar Toggle**:
+  - Made the public and admin sidebar hamburger buttons visible by default on desktop and tablet widths in [`public/css/style.css`](./public/css/style.css).
+  - Kept both buttons hidden at mobile widths (`768px` and below), where the fixed mobile bottom tab navigation is used instead.
+- **Testing & Verification**:
+  - Verified desktop button visibility and sidebar collapse behavior at wide viewport sizes; `git diff --check` passed.
+
+### Milestone 31: Centered Public Browse Tab & Mobile Staff Header Spacing
+- **Public Mobile Navigation** ([`views/index.ejs`](./views/index.ejs)):
+  - Removed the Staff Access/Admin/Staff Console tab from the public mobile bottom navigation.
+  - Reordered the remaining tabs so Browse is centered between How to Claim and About, and styled Browse with the blue accent tab treatment.
+- **Staff Mobile Topbar** ([`public/css/style.css`](./public/css/style.css)):
+  - Prevented the staff breadcrumb and secure-session indicator from wrapping into cramped multi-line text on mobile.
+  - Hid redundant breadcrumb prefixes and, on narrow phones, the date; retained the active page name, session status, and notification control.
+- **Testing & Verification**:
+  - Verified public mobile tab order, template compilation, and mobile staff topbar responsive rules; `git diff --check` passed.
 
 ---
 
@@ -682,10 +731,3 @@ All migrations are tracked in `schema_migrations` with SHA-256 checksums. Applie
   - `tests/integration/auth.test.js`: login, logout, /me, 401 on protected routes.
   - `tests/integration/items.test.js`: public GET, protected POST/PUT/DELETE.
   - `tests/integration/claims.test.js`: public POST, staff GET/PATCH.
-
-
-
-
-
-
-
