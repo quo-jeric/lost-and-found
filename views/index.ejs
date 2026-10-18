@@ -13,8 +13,11 @@
           </svg>
         </div>
         <div class="brand-info">
-          <span class="brand-acronym">CSPC</span>
-          <span class="brand-name">Lost & Found</span>
+          <div class="brand-primary-line">
+            <span class="brand-acronym">CSPC</span>
+            <span class="brand-sep">·</span>
+            <span class="brand-name">Lost & Found</span>
+          </div>
           <span class="brand-institution">Camarines Sur Polytechnic Colleges</span>
         </div>
       </a>
@@ -71,11 +74,21 @@
 
     <!-- Top Breadcrumb & Status Header Bar -->
     <header class="top-header-bar">
-      <div class="breadcrumb-trail">
-        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-        <span>Campus Lost & Found</span>
-        <span>/</span>
-        <span class="current">Found items</span>
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <!-- Burger toggle for desktop/tablet -->
+        <button class="sidebar-burger-btn" id="sidebar-toggle-btn" onclick="toggleSidebar()" aria-label="Toggle sidebar" title="Toggle sidebar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+        <div class="breadcrumb-trail">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+          <span>Campus Lost & Found</span>
+          <span>/</span>
+          <span class="current">Found items</span>
+        </div>
       </div>
 
       <div class="top-header-right">
@@ -83,7 +96,7 @@
           <span class="badge-public-view" style="background: #E0F2FE; color: #0369A1; border-color: #BAE6FD;">
             STAFF ACTIVE: <%= currentUser.role.toUpperCase() %>
           </span>
-          <a href="<%= currentUser.role === 'admin' ? '/admin/found-items/new' : '/dashboard' %>" class="staff-login-trigger">
+          <a href="/admin/found-items/new" class="staff-login-trigger">
             <%= currentUser.role === 'admin' ? 'Admin Console' : 'Guard Desk' %>
           </a>
           <a href="/logout" class="staff-login-trigger" style="color: #EF4444;">Sign Out</a>
@@ -345,6 +358,90 @@
       </aside>
     </div>
   </main>
+</div>
+
+<!-- Mobile Bottom Tab Navigation Bar (public / student view) -->
+<nav class="mobile-bottom-tab-bar" aria-label="Mobile navigation">
+  <button type="button" class="mob-tab-item" onclick="openClaimGuideModal()" id="mob-tab-guide">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+      <polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line>
+      <line x1="16" y1="17" x2="8" y2="17"></line>
+    </svg>
+    <span class="mob-tab-label">How to Claim</span>
+  </button>
+  <a href="/" class="mob-tab-item accent-tab active" id="mob-tab-browse" aria-current="page">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect>
+      <rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect>
+    </svg>
+    <span class="mob-tab-label">Browse</span>
+  </a>
+  <button type="button" class="mob-tab-item" onclick="openSystemAboutModal()" id="mob-tab-about">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="10"></circle>
+      <line x1="12" y1="16" x2="12" y2="12"></line>
+      <line x1="12" y1="8" x2="12.01" y2="8"></line>
+    </svg>
+    <span class="mob-tab-label">About</span>
+  </button>
+</nav>
+
+<!-- Mobile Bottom Sheet Overlay -->
+<div class="mobile-bottom-sheet-overlay" id="mobile-sheet-overlay" onclick="closeMobileSheet()"></div>
+
+<!-- Mobile Bottom Sheet: Item Details -->
+<div class="mobile-bottom-sheet" id="mobile-item-sheet" role="dialog" aria-label="Item details" aria-modal="true">
+  <div class="sheet-drag-handle"></div>
+  <div class="sheet-header">
+    <span class="sheet-header-label">ITEM DETAILS</span>
+    <button type="button" class="sheet-close-btn" onclick="closeMobileSheet()" aria-label="Close details">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+    </button>
+  </div>
+  <div class="sheet-body">
+    <h3 class="sheet-item-title" id="sheet-item-title">Item Title</h3>
+    <div class="sheet-ref-status-row">
+      <span class="sheet-ref-tag" id="sheet-item-ref">FI-0000</span>
+      <span class="sheet-status-badge">Safe keeping</span>
+    </div>
+    <div class="sheet-specs-list">
+      <div class="sheet-spec-item">
+        <span class="sheet-spec-key">Category</span>
+        <span class="sheet-spec-val" id="sheet-item-category">-</span>
+      </div>
+      <div class="sheet-spec-item">
+        <span class="sheet-spec-key">Item type</span>
+        <span class="sheet-spec-val" id="sheet-item-type">-</span>
+      </div>
+      <div class="sheet-spec-item">
+        <span class="sheet-spec-key">Appearance</span>
+        <span class="sheet-spec-val" id="sheet-item-appearance">-</span>
+      </div>
+      <div class="sheet-spec-item">
+        <span class="sheet-spec-key">Found location</span>
+        <span class="sheet-spec-val" id="sheet-item-location">-</span>
+      </div>
+      <div class="sheet-spec-item">
+        <span class="sheet-spec-key">Found date</span>
+        <span class="sheet-spec-val" id="sheet-item-date">-</span>
+      </div>
+    </div>
+    <div class="sheet-officer-box">
+      <svg class="sheet-officer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="M9 12l2 2 4-4"></path></svg>
+      <div class="sheet-officer-info">
+        <span class="sheet-officer-name" id="sheet-item-finder">Campus Guard</span>
+        <span class="sheet-officer-role">Campus Security · SG-014</span>
+      </div>
+    </div>
+  </div>
+  <div class="sheet-footer">
+    <button type="button" class="sheet-contact-btn" onclick="openClaimModalFromSide()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+      <span>Contact Guard</span>
+    </button>
+    <p class="sheet-claim-hint">Think this is yours? Bring a valid ID and describe the item to verify ownership.</p>
+  </div>
 </div>
 
 <!-- Modal Dialog: File Claim / Contact Guard -->

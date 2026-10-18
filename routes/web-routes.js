@@ -102,9 +102,7 @@ router.get('/admin/found-items/new', async (req, res, next) => {
 // GET /login - Staff & Admin Unified Login page
 router.get('/login', (req, res) => {
   if (req.session?.userId) {
-    return req.session.role === 'admin'
-      ? res.redirect('/admin/found-items/new')
-      : res.redirect('/dashboard');
+    return res.redirect('/admin/found-items/new');
   }
   res.render('login', {
     title: 'Staff & Admin Login | CSPC Lost & Found',
@@ -134,11 +132,7 @@ router.post('/login', async (req, res) => {
       if (redirectUrl && redirectUrl.startsWith('/')) {
         return res.redirect(redirectUrl);
       }
-      if (user.role === 'admin') {
-        return res.redirect('/admin/found-items/new');
-      } else {
-        return res.redirect('/dashboard');
-      }
+      return res.redirect('/admin/found-items/new');
     });
   } catch (err) {
     const message = encodeURIComponent(err.message || 'Invalid credentials');
