@@ -426,12 +426,24 @@ async function submitPublicClaim(e) {
 
   const itemId = Number(document.getElementById('claim-item-id').value);
   const claimantName = document.getElementById('claimant-name').value.trim();
-  const claimantEmail = document.getElementById('claimant-email').value.trim() || null;
-  const claimantPhone = document.getElementById('claimant-phone').value.trim() || null;
+  const rawEmail = document.getElementById('claimant-email').value.trim();
+  const claimantEmail = rawEmail ? rawEmail.toLowerCase() : null;
+  const rawPhone = document.getElementById('claimant-phone').value.trim();
+  const claimantPhone = rawPhone ? rawPhone.replace(/[\s\-().]/g, '') : null;
   const proofDescription = document.getElementById('claim-proof-description').value.trim();
 
   if (!claimantEmail && !claimantPhone) {
     showToast('Please provide at least an email or phone number for verification contact.', 'error');
+    return;
+  }
+
+  if (claimantEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(claimantEmail)) {
+    showToast('Please enter a valid email address.', 'error');
+    return;
+  }
+
+  if (claimantPhone && !/^\+?[0-9]{7,15}$/.test(claimantPhone)) {
+    showToast('Please enter a valid phone number (e.g. 09123456789 or +639123456789).', 'error');
     return;
   }
 
@@ -1520,8 +1532,22 @@ async function submitInPersonClaim(e) {
   const verificationProof = document.getElementById('in-person-verification-proof').value.trim();
 
   const isEmail = contact.includes('@');
-  const claimantEmail = isEmail ? contact : null;
-  const claimantPhone = !isEmail ? contact : null;
+  const claimantEmail = isEmail ? contact.toLowerCase().trim() : null;
+  const claimantPhone = !isEmail ? contact.replace(/[\s\-().]/g, '') : null;
+
+  if (claimantEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(claimantEmail)) {
+    showToast('Please enter a valid email address for contact.', 'error');
+    if (submitBtn) submitBtn.disabled = false;
+    if (btnText) btnText.textContent = 'Verify Credential & Release Item';
+    return;
+  }
+
+  if (claimantPhone && !/^\+?[0-9]{7,15}$/.test(claimantPhone)) {
+    showToast('Please enter a valid contact phone number (e.g. 09123456789 or +639123456789).', 'error');
+    if (submitBtn) submitBtn.disabled = false;
+    if (btnText) btnText.textContent = 'Verify Credential & Release Item';
+    return;
+  }
 
   const proofDescription = `[In-Person Credential Verification]
 ID Type: ${idType}

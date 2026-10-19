@@ -44,7 +44,7 @@ function validateClaimPayload(data) {
   // claimant_email — optional, but validated for format when present
   let claimant_email = null;
   if (data.claimant_email !== undefined && data.claimant_email !== null && data.claimant_email !== '') {
-    claimant_email = String(data.claimant_email).trim();
+    claimant_email = String(data.claimant_email).trim().toLowerCase();
     if (claimant_email.length > 50) {
       errors.push({ field: 'claimant_email', message: 'claimant_email must be 50 characters or fewer.' });
       claimant_email = null; // prevent format check on already-invalid value
@@ -57,13 +57,26 @@ function validateClaimPayload(data) {
   // claimant_phone — optional, max 20 chars
   let claimant_phone = null;
   if (data.claimant_phone !== undefined && data.claimant_phone !== null && data.claimant_phone !== '') {
-    claimant_phone = String(data.claimant_phone).trim();
-    if (claimant_phone.length > 20) {
+    const rawPhone = String(data.claimant_phone).trim();
+    if (rawPhone.length > 20) {
       errors.push({ field: 'claimant_phone', message: 'claimant_phone must be 20 characters or fewer.' });
       claimant_phone = null;
-    } else if (!claimant_phone) {
+    } else if (!rawPhone) {
       // Treat whitespace-only as absent
       claimant_phone = null;
+    } else {
+      // Sanitize formatting characters: strip spaces, dashes, parentheses, dots
+      const cleanedPhone = rawPhone.replace(/[\s\-().]/g, '');
+      const PHONE_REGEX = /^\+?[0-9]{7,15}$/;
+      if (!PHONE_REGEX.test(cleanedPhone)) {
+        errors.push({
+          field: 'claimant_phone',
+          message: 'claimant_phone must be a valid phone number (e.g. 09123456789 or +639123456789).',
+        });
+        claimant_phone = null;
+      } else {
+        claimant_phone = cleanedPhone;
+      }
     }
   }
 
