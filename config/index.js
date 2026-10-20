@@ -22,6 +22,8 @@ export const config = Object.freeze({
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     name: process.env.DB_NAME,
+    ssl: process.env.DB_SSL === 'true' || process.env.NODE_ENV === 'production',
+    connectionLimit: Number(process.env.DB_CONNECTION_LIMIT) || (process.env.NODE_ENV === 'production' ? 2 : 10),
     migrationUser: process.env.DB_MIGRATION_USER || process.env.DB_USER,
     migrationPassword: process.env.DB_MIGRATION_PASSWORD || process.env.DB_PASSWORD,
   }),

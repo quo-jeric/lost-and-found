@@ -14,6 +14,8 @@ const __dirname = path.dirname(__filename);
 
 export const app = express();
 
+app.set('trust proxy', 1);
+
 // ── Security & body parsing ─────────────────────────────────────────────────
 
 // Disable the X-Powered-By header so the server fingerprint is not leaked.

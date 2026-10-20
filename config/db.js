@@ -8,11 +8,15 @@ export const pool = mysql.createPool({
   password: config.db.password,
   database: config.db.name,
   waitForConnections: true,
-  connectionLimit: 10,
+  connectionLimit: config.db.connectionLimit,
   queueLimit: 0,
   namedPlaceholders: true,
   charset: 'utf8mb4',
   timezone: 'Z', // JS Date <-> DB values are UTC
+  enableKeepAlive: true,
+  keepAliveInitialDelay: 10000,
+
+  ssl: config.db.ssl ? { minVersion: 'TLSv1.2', rejectUnauthorized: true} : undefined,
 });
 
 // Pin every pooled connection's session time zone to UTC.
