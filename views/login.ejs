@@ -2,6 +2,16 @@
 
   <div class="login-viewport-wrapper">
     <div class="login-card-container">
+      <!-- Animated Top Progress Bar on Submit -->
+      <div class="login-loading-bar" id="login-loading-bar"></div>
+
+      <!-- High-tech Loading State Overlay -->
+      <div class="login-loading-overlay" id="login-loading-overlay" aria-live="polite">
+        <div class="login-spinner-ring"></div>
+        <div class="login-loading-text">Signing In to Portal...</div>
+        <div class="login-loading-subtext">Verifying security credentials & loading your dashboard</div>
+      </div>
+
       <!-- CSPC Branding Header -->
       <div style="text-align: center; margin-bottom: 1.75rem;">
         <a href="/"
@@ -64,7 +74,7 @@
             </div>
           </div>
 
-          <form action="/login" method="POST">
+          <form action="/login" method="POST" id="login-form">
             <% if (typeof redirectUrl !=='undefined' && redirectUrl) { %>
               <input type="hidden" name="redirectUrl" value="<%= redirectUrl %>">
               <% } %>
@@ -84,14 +94,14 @@
                     placeholder="••••••••••••" required autocomplete="current-password">
                 </div>
 
-                <button type="submit" class="btn-blue-submit"
+                <button type="submit" class="btn-blue-submit" id="btn-login-submit"
                   style="width: 100%; justify-content: center; padding: 0.75rem; font-size: 0.9rem;">
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
+                  <svg id="btn-login-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
                     <polyline points="10 17 15 12 10 7"></polyline>
                     <line x1="15" y1="12" x2="3" y2="12"></line>
                   </svg>
-                  <span>Sign In to Portal</span>
+                  <span id="btn-login-text">Sign In to Portal</span>
                 </button>
           </form>
 
@@ -107,6 +117,31 @@
       document.getElementById('login-email').value = email;
       document.getElementById('login-password').value = pwd;
     }
+
+    document.getElementById('login-form').addEventListener('submit', function (e) {
+      const emailInput = document.getElementById('login-email');
+      const passInput = document.getElementById('login-password');
+      if (!emailInput || !emailInput.value.trim() || !passInput || !passInput.value) return;
+
+      const submitBtn = document.getElementById('btn-login-submit');
+      const bar = document.getElementById('login-loading-bar');
+      const overlay = document.getElementById('login-loading-overlay');
+
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.style.opacity = '0.85';
+        submitBtn.style.pointerEvents = 'none';
+        submitBtn.innerHTML = `
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" style="animation: loginSpin 0.75s linear infinite;">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-opacity="0.25" stroke-width="2.5"></circle>
+            <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"></path>
+          </svg>
+          <span>Signing In...</span>
+        `;
+      }
+      if (bar) bar.classList.add('active');
+      if (overlay) overlay.classList.add('active');
+    });
   </script>
 
   <div id="toast-container" class="toast-container"></div>

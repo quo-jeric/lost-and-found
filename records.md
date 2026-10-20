@@ -792,3 +792,159 @@ All migrations are tracked in `schema_migrations` with SHA-256 checksums. Applie
   - The dashboard sidebar logo used `.brand-crest-img` which also has `object-fit: cover` in CSS, but the difference in perceived quality was noted by the user comparing screenshots side-by-side.
 - **Fix**: Changed `object-fit: cover` → `object-fit: contain` on the public sidebar logo `<img>` so the full crest is visible without distortion, matching the intended round logo display. The white background on the container ensures no letterboxing artefacts appear.
 - **Files Changed**: [`views/index.ejs`](./views/index.ejs) — line ~9.
+
+### Patch 37: Session Logout Confirmation Dialog & Collapsed Desktop Sidebar Logout
+- **Root Cause & Requirements**:
+  - Direct navigation to `/logout` immediately terminated user session without verification, risking accidental logouts and loss of in-progress edits.
+  - When the desktop sidebar was collapsed (`.sidebar-collapsed`), `.admin-sidebar-bottom` was hidden with `display: none !important`, completely removing the logout button from the viewport on desktop/tablet views.
+  - Redundant header ("Session / Sign Out of Session") cluttered the modal and duplicate red text logout button in the expanded sidebar cluttered the navigation.
+- **Fix**:
+  - Simplified `<dialog id="logout-confirm-dialog" class="custom-dialog sm">` by removing the redundant "Session / Sign Out of Session" title header, keeping an absolute corner close button (`✕`), centered shield alert badge, "Are you sure you want to sign out?", cancel button, and red "Yes, Sign Out" action button.
+  - In expanded desktop sidebar view, only the bottom user profile sign out button (`.btn-sidebar-logout` beside user name) remains visible (`.admin-nav-logout-icon` hidden with `display: none !important`).
+  - When the sidebar is collapsed via the hamburger toggle, `.admin-nav-logout-icon` is automatically displayed as an icon-only button (44×44px square) in the sidebar nav with subtle red hover styling, ensuring sign-out is always accessible in collapsed icon mode.
+  - Added `openLogoutDialog()` and `closeLogoutDialog()` functions to [`public/js/app.js`](./public/js/app.js), integrated backdrop-click-to-dismiss, and synchronized aria/title state with `#admin-sidebar-toggle-btn`.
+- **Files Changed**:
+  - [`views/dashboard.ejs`](./views/dashboard.ejs)
+  - [`views/admin/add-item.ejs`](./views/admin/add-item.ejs)
+  - [`public/js/app.js`](./public/js/app.js)
+  - [`public/css/style.css`](./public/css/style.css)
+
+### Patch 38: Removal of Redundant Dashboard Horizontal Navigation Tabs
+- **Root Cause & Requirements**:
+  - The dashboard rendered a duplicate horizontal tab bar (`.dashboard-tabs` with Item Inventory, Claims Verification, and Audit Trail buttons with counter pills) above the main content area.
+  - Since section navigation is already handled by the primary left sidebar on desktop/tablet views and by the mobile bottom navigation bar on mobile devices, this horizontal bar was visually redundant and occupied valuable viewport space.
+- **Fix**:
+  - Removed the `.dashboard-tabs` container from [`views/dashboard.ejs`](./views/dashboard.ejs).
+  - Preserved graceful compatibility in `switchDashboardTab()` in [`public/js/app.js`](./public/js/app.js).
+- **Files Changed**:
+  - [`views/dashboard.ejs`](./views/dashboard.ejs)
+
+### Patch 39: Analytics & Telemetry Tab (GA4 Style) and Top Right Add Item Modal Trigger
+- **Root Cause & Requirements**:
+  - The user requested replacing the "ADD FOUND ITEM" item in the desktop/tablet sidebar with an "Analytics" tab featuring graphs inspired by Google Analytics 4 (GA4).
+  - The "Add Found Item" action was relocated to the top-right header area (replacing the static access badge), turning it into a prominent modal button accessible across all tabs.
+  - Mobile bottom navigation tabs were explicitly kept unchanged.
+- **Fix**:
+  - Replaced the sidebar `ADD FOUND ITEM` link with `Analytics` in [`views/dashboard.ejs`](./views/dashboard.ejs) and [`views/admin/add-item.ejs`](./views/admin/add-item.ejs), connected to `switchDashboardTab('analytics')`.
+  - Replaced the top right `badge-access-pill` in the hero banner with a primary `.btn-hero-add-item` button (`[+ Add Found Item]`) that invokes `openNewItemModal()`, opening the full intake modal (`#log-item-dialog`) directly from any active tab.
+  - Built a 2×2 GA4-style analytics dashboard (`#tab-panel-analytics`) featuring:
+    1. **Property Ingestion (28-Day Dual-Line Trend)**: Ingestion velocity vs. Reunited claims over the past 28 days with smooth bezier curves.
+    2. **Intake by Asset Category (Bar Chart)**: Volume distribution across categories.
+    3. **Reunification & Claim Rate (Dynamics Trend)**: Percentage recovery rate with cumulative returns curve.
+    4. **Top Campus Found Locations (Horizontal Bar Chart)**: Incident hotspot distribution.
+  - Integrated local standalone Chart.js library ([`public/js/chart.min.js`](./public/js/chart.min.js)) for zero-latency, offline rendering.
+  - Implemented `initAnalyticsCharts()` in [`public/js/app.js`](./public/js/app.js) with real-time JSON telemetry bindings, automated chart resizing, and breadcrumb synchronization.
+  - Added modern GA4 styling and responsive rules in [`public/css/style.css`](./public/css/style.css).
+- **Files Changed**:
+  - [`views/dashboard.ejs`](./views/dashboard.ejs)
+  - [`views/admin/add-item.ejs`](./views/admin/add-item.ejs)
+  - [`public/js/chart.min.js`](./public/js/chart.min.js)
+  - [`public/js/app.js`](./public/js/app.js)
+  - [`public/css/style.css`](./public/css/style.css)
+
+### Patch 40: Hero Banner & Constant Stat Cards Removal + Main Body Top-Right Action Bar
+- **Root Cause & Requirements**:
+  - The static "Campus Custody Operations" hero banner and 3 constant summary cards (Pending Claims, Total Logged Items, Reunited & Returned) occupied significant vertical viewport real estate while offering duplicate telemetry now presented dynamically in the Analytics tab.
+  - The user requested completely removing these redundant banners/cards and ensuring the "+ Add Found Item" action button is placed inside the main body top-right, visible and persistent across all sidebar tabs (`Analytics`, `Item Inventory`, `Claims Verification`, `Audit Trail`), while leaving the top breadcrumb/session header clean and mobile bottom tabs untouched.
+- **Fix**:
+  - Removed `<section class="admin-hero-banner">` and `<section class="admin-summary-grid">` from [`views/dashboard.ejs`](./views/dashboard.ejs).
+  - Kept top header bar (`.admin-topbar-right`) dedicated solely to `View Public Site`, `Secure session`, live date, and notification bell.
+  - Added `.admin-main-action-bar` at the top of `.admin-content-container` in [`views/dashboard.ejs`](./views/dashboard.ejs), positioning the primary `.btn-hero-add-item` button (`[+ Add Found Item]`) at the top right of the main content area across all sidebar views.
+  - Updated responsive styles in [`public/css/style.css`](./public/css/style.css): full button styling on desktop/tablet views and hidden on mobile `<= 768px` where the dedicated mobile bottom tab bar (`.mobile-bottom-tab-bar .accent-tab`) provides direct item creation.
+- **Files Changed**:
+  - [`views/dashboard.ejs`](./views/dashboard.ejs)
+  - [`public/css/style.css`](./public/css/style.css)
+  - [`records.md`](./records.md)
+
+### Patch 41: Mobile View Add Item Hide Rule, Topbar Sign Out Icon, and Mobile Analytics Tab
+- **Root Cause & Requirements**:
+  - In mobile view, the main body `+ Add Found Item` button still rendered because a subsequent CSS rule overrode the initial media query rule, causing duplicate "Add Item" buttons on mobile screens where the bottom navigation bar already features a prominent centered `Add Item` tab.
+  - The user requested replacing the bottom mobile tab "Sign Out" button with "Analytics" and moving the Sign Out action to the top header in place of the system notifications bell icon.
+- **Fix**:
+  - Enforced `@media (max-width: 768px) { .admin-main-action-bar, .btn-hero-add-item { display: none !important; } }` directly after `.btn-hero-add-item` in [`public/css/style.css`](./public/css/style.css), ensuring the button only renders on desktop/tablet views.
+  - Replaced `.btn-topbar-bell` with `.btn-topbar-logout` in both [`views/dashboard.ejs`](./views/dashboard.ejs) and [`views/admin/add-item.ejs`](./views/admin/add-item.ejs), providing an accessible header Sign Out button that triggers `#logout-confirm-dialog`.
+  - Replaced `#mob-tab-logout` with `#mob-tab-analytics` in `.mobile-bottom-tab-bar` in [`views/dashboard.ejs`](./views/dashboard.ejs) and [`views/admin/add-item.ejs`](./views/admin/add-item.ejs), linking directly to `switchDashboardTab('analytics')` with automatic active state synchronization.
+- **Files Changed**:
+  - [`views/dashboard.ejs`](./views/dashboard.ejs)
+  - [`views/admin/add-item.ejs`](./views/admin/add-item.ejs)
+  - [`public/css/style.css`](./public/css/style.css)
+  - [`records.md`](./records.md)
+
+### Patch 42: Comprehensive Mobile Analytics Refinement & Responsive Chart Scaling
+- **Root Cause & Requirements**:
+  - In mobile view, the Analytics dashboard had large desktop-oriented padding (`1.75rem 2.25rem 3rem` in `.admin-content-container` and `1.5rem` in `.analytics-dashboard-wrap`), resulting in cramped horizontal space on small screens.
+  - The 1.85rem metric numbers (especially wide text like `Clothing & Accessories (1)`) caused card text overflow.
+  - Chart.js category and location labels lacked mobile truncation, and the bottom-most card could be obscured by the fixed mobile bottom navigation bar.
+- **Fix**:
+  - Optimized container spacing on mobile (`max-width: 768px` and `max-width: 480px`) with `padding: 0.85rem 0.75rem 6.5rem;` in `.admin-content-container`, ensuring generous clearance above `.mobile-bottom-tab-bar`.
+  - Added `.analytics-title-cluster` with flex-wrapping for the header title and live telemetry chip.
+  - Set `.ga4-metric-number` to responsive typography (`1.35rem` on tablet/mobile, `1.18rem` on small screens) with `text-overflow: ellipsis; white-space: nowrap; max-width: 100%;`.
+  - Stacked `.ga4-card-header` vertically on mobile with legends positioned neatly under metrics.
+  - Enhanced Chart.js configs in [`public/js/app.js`](./public/js/app.js):
+    - Category chart: X-axis label rotation (30°) and smart truncation (`11 chars` with ellipses) while keeping full category names in tooltip popovers.
+    - Location chart: Y-axis label truncation for clean alignment on phones.
+    - Trend & Dynamics charts: reduced tick limits (`4` ticks on screens `< 640px`) to prevent date overlap.
+    - Added responsive window resize event listener to trigger Chart `.resize()` automatically on mobile viewport changes and orientation flips.
+- **Files Changed**:
+  - [`views/dashboard.ejs`](./views/dashboard.ejs)
+  - [`public/css/style.css`](./public/css/style.css)
+  - [`public/js/app.js`](./public/js/app.js)
+  - [`records.md`](./records.md)
+
+### Patch 43: Default Login to Analytics for All Roles & Mobile Add Item Modal Trigger
+- **Root Cause & Requirements**:
+  - Prior routing redirected admins upon login or accessing `/dashboard` without a query tab directly to `/admin/found-items/new`, while guards defaulted to `tab=items`.
+  - In mobile view, the center `Add Item` button in the bottom navigation bar was an anchor linking to `/admin/found-items/new`, forcing a full page navigation away from the dashboard instead of popping open the modal.
+- **Fix**:
+  - In [`routes/web-routes.js`](./routes/web-routes.js):
+    - Removed admin-specific redirect to `/admin/found-items/new`.
+    - Updated both GET & POST `/login` redirects to default to `/dashboard?tab=analytics`.
+    - Set default `activeTab` on `/dashboard` to `'analytics'` for both `guard` and `admin` roles (`req.query.tab || 'analytics'`).
+  - In [`views/dashboard.ejs`](./views/dashboard.ejs):
+    - Converted `#mob-tab-add` in `.mobile-bottom-tab-bar` from an anchor tag into a button invoking `openNewItemModal()`. Clicking it directly opens the `#log-item-dialog` modal from any active tab without page reload.
+- **Files Changed**:
+  - [`routes/web-routes.js`](./routes/web-routes.js)
+  - [`views/dashboard.ejs`](./views/dashboard.ejs)
+  - [`records.md`](./records.md)
+
+### Patch 44: Mobile Bottom Sheet Filter & Active Filter Chips for Inventory and Claims
+- **Root Cause & Requirements**:
+  - On mobile (`<= 768px`), the `.table-actions-cluster` in both Item Inventory and Claims Verification stacked inline dropdowns/pills vertically, consuming 150–180px of vertical space before the data table — degrading the mobile table-browsing experience.
+  - The user selected the "Mobile Bottom Sheet Modal" design pattern: a slide-up drawer with filter pill buttons, an "Apply Filters" CTA, and active filter chip tags beneath the search bar (matching reference images).
+- **Fix**:
+  - **[`views/dashboard.ejs`](./views/dashboard.ejs)**:
+    - Restructured `.table-actions-cluster` in `#tab-panel-items` and `#tab-panel-claims` into a new `.search-and-filter-bar` (search input + `.btn-filter-trigger`) and `.desktop-filter-controls` (inline dropdowns hidden on mobile).
+    - Added a clear-search `✕` button inside each search input wrap (`#inv-clear-search-btn`, `#claim-clear-search-btn`).
+    - Added `.active-filter-chips-row` containers (`#inventory-active-chips`, `#claims-active-chips`) below each toolbar to display active filter chips.
+    - Inserted `<dialog id="inventory-filter-sheet" class="bottom-sheet-dialog">` and `<dialog id="claims-filter-sheet" class="bottom-sheet-dialog">` with pill-button sections for Category + Status (Inventory) and Claim Status (Claims), drag handle, header with ✕ close + Reset text button, and sticky "Apply Filters" CTA.
+  - **[`public/css/style.css`](./public/css/style.css)**:
+    - Added `.hidden { display: none !important; }` global utility class.
+    - Added `.search-and-filter-bar`, `.btn-filter-trigger`, `.filter-count-badge`, `.desktop-filter-controls` responsive styles. On mobile (`<= 768px`): `.btn-filter-trigger` shown as `inline-flex`; `.desktop-filter-controls` hidden with `display: none !important`.
+    - Styled `.active-filter-chips-row`, `.active-filter-chip`, `.btn-remove-chip`, `.btn-clear-all-chips` with pill animations (`chipFadeIn`) for chip appearance.
+    - Styled `dialog.bottom-sheet-dialog` with slide-up animation (`sheetSlideUp` on mobile, `sheetPop` on desktop), `.bottom-sheet-container`, `.bottom-sheet-header`, `.sheet-filter-group`, `.sheet-pill-grid`, `.sheet-filter-pill` (active = dark `#1E293B` bg), `.bottom-sheet-footer`, `.btn-sheet-apply`.
+  - **[`public/js/app.js`](./public/js/app.js)**:
+    - Added `openInventoryFilterSheet()`, `closeInventoryFilterSheet()`, `selectSheetInventoryCategory()`, `selectSheetInventoryStatus()`, `_syncSheetInventoryPills()`, `applyInventoryFilterSheet()`, `resetInventoryFiltersFromSheet()`.
+    - Added `renderInventoryActiveChips()`, `_removeInventoryChip()`, `updateInventoryFilterBadge()`.
+    - Added `clearInventorySearch()`, `clearClaimsSearch()` helpers.
+    - Added `openClaimsFilterSheet()`, `closeClaimsFilterSheet()`, `selectSheetClaimStatus()`, `_syncSheetClaimPills()`, `applyClaimsFilterSheet()`, `resetClaimsFiltersFromSheet()`.
+    - Added `renderClaimsActiveChips()`, `_removeClaimsChip()`, `_clearAllClaimsFilters()`, `updateClaimsFilterBadge()`.
+    - Wrapped `runStaffInventoryFilter` and `filterStaffClaims`/`setClaimFilter` with IIFE patterns to auto-invoke chip and badge updates on every filter run.
+    - Added backdrop-click close handlers for both filter sheet dialogs in `DOMContentLoaded`.
+    - Restored missing `let auditCurrentPage = 1;` declaration that was inadvertently removed.
+- **Files Changed**:
+  - [`views/dashboard.ejs`](./views/dashboard.ejs)
+  - [`public/css/style.css`](./public/css/style.css)
+  - [`public/js/app.js`](./public/js/app.js)
+  - [`records.md`](./records.md)
+
+### Patch 45: Topbar Sign Out Button Responsive Visibility (Desktop & Tablet Removal)
+- **Root Cause & Requirements**:
+  - The user requested removing the top header Sign Out button (`.btn-topbar-logout`) in desktop view and tablet view.
+  - On desktop and tablet screens (`> 768px`), the navigation sidebar is always available and already houses dedicated, prominent Sign Out controls (both in the footer profile strip when expanded and as an icon nav item when collapsed). Displaying the red Sign Out button in `.admin-topbar-right` next to the date was redundant and cluttered the header.
+  - On mobile views (`<= 768px`), where the sidebar is completely hidden and the bottom navigation bar houses feature tabs (including Analytics), the topbar Sign Out button remains active and accessible.
+- **Fix**:
+  - In [`public/css/style.css`](./public/css/style.css), updated `.btn-topbar-logout` to default to `display: none !important;` (hiding it cleanly across desktop and tablet viewport widths).
+  - Inside `@media (max-width: 768px)`, set `.btn-topbar-logout { display: flex !important; }` so mobile phone users retain their convenient, accessible header logout action.
+- **Files Changed**:
+  - [`public/css/style.css`](./public/css/style.css)
+  - [`records.md`](./records.md)

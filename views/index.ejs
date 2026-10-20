@@ -96,7 +96,7 @@
           <span class="badge-public-view" style="background: #E0F2FE; color: #0369A1; border-color: #BAE6FD;">
             STAFF ACTIVE: <%= currentUser.role.toUpperCase() %>
           </span>
-          <a href="/admin/found-items/new" class="staff-login-trigger">
+          <a href="/dashboard?tab=analytics" class="staff-login-trigger">
             <%= currentUser.role === 'admin' ? 'Admin Console' : 'Guard Desk' %>
           </a>
           <a href="/logout" class="staff-login-trigger" style="color: #EF4444;">Sign Out</a>
@@ -130,13 +130,48 @@
         </div>
       </div>
 
-      <!-- 3-Column Search and Filters Bar -->
+      <!-- 3-Column Search and Filters Bar (Search on Left) -->
       <div class="search-filter-panel">
-        <!-- 1. Category -->
-        <div class="filter-input-block">
+        <!-- 1. Search Keyword (Left side on Desktop, Unified bar on Mobile) -->
+        <div class="filter-input-block public-search-block">
+          <span class="filter-field-label">SEARCH FOUND ITEMS</span>
+          <div class="public-search-row">
+            <div class="filter-field-input-box public-search-input-box">
+              <svg class="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input 
+                type="search" 
+                id="catalog-search-input" 
+                class="with-icon" 
+                placeholder="Search by item name or description" 
+                autocomplete="off"
+              >
+              <button type="button" class="btn-clear-search hidden" id="public-clear-search-btn" onclick="clearPublicSearch()" aria-label="Clear search">✕</button>
+            </div>
+
+            <!-- Mobile Filter Trigger Button (Visible on mobile screens) -->
+            <button type="button" class="btn-filter-trigger public-mobile-filter-btn" id="public-filter-sheet-trigger" onclick="openPublicFilterSheet()" aria-label="Open filter options" title="Open filter menu">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="4" y1="21" x2="4" y2="14"></line>
+                <line x1="4" y1="10" x2="4" y2="3"></line>
+                <line x1="12" y1="21" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12" y2="3"></line>
+                <line x1="20" y1="21" x2="20" y2="16"></line>
+                <line x1="20" y1="12" x2="20" y2="3"></line>
+                <line x1="1" y1="14" x2="7" y2="14"></line>
+                <line x1="9" y1="8" x2="15" y2="8"></line>
+                <line x1="17" y1="16" x2="23" y2="16"></line>
+              </svg>
+              <span class="btn-filter-trigger-text">Filters</span>
+              <span class="filter-count-badge hidden" id="public-filter-badge">0</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 2. Category Dropdown (Desktop view) -->
+        <div class="filter-input-block public-desktop-filter">
           <span class="filter-field-label">ITEM CATEGORY</span>
           <div class="filter-field-input-box">
-            <select id="filter-category" onchange="applyFilters()">
+            <select id="filter-category" onchange="onPublicDesktopFilterChange()">
               <option value="">All categories</option>
               <% if (typeof categories !== 'undefined' && categories.length > 0) { %>
                 <% categories.forEach(cat => { %>
@@ -147,11 +182,11 @@
           </div>
         </div>
 
-        <!-- 2. Location -->
-        <div class="filter-input-block">
+        <!-- 3. Location Dropdown (Desktop view) -->
+        <div class="filter-input-block public-desktop-filter">
           <span class="filter-field-label">FOUND LOCATION</span>
           <div class="filter-field-input-box">
-            <select id="filter-location" onchange="applyFilters()">
+            <select id="filter-location" onchange="onPublicDesktopFilterChange()">
               <option value="">All campus locations</option>
               <% if (typeof locations !== 'undefined' && locations.length > 0) { %>
                 <% locations.forEach(loc => { %>
@@ -161,22 +196,10 @@
             </select>
           </div>
         </div>
-
-        <!-- 3. Search Keyword -->
-        <div class="filter-input-block">
-          <span class="filter-field-label">SEARCH FOUND ITEMS</span>
-          <div class="filter-field-input-box">
-            <svg class="field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-            <input 
-              type="search" 
-              id="catalog-search-input" 
-              class="with-icon" 
-              placeholder="Search by item name or description" 
-              autocomplete="off"
-            >
-          </div>
-        </div>
       </div>
+
+      <!-- Active Filter Chips for Public View -->
+      <div class="active-filter-chips-row hidden" id="public-active-chips" style="margin-top: 0.75rem;"></div>
     </section>
 
     <!-- Split Catalog Area: Left 3x3 Grid, Right Sticky Details -->
@@ -604,6 +627,65 @@
   </div>
   <div class="dialog-bottom-actions">
     <button type="button" class="btn-cancel" onclick="document.getElementById('about-system-dialog').close()">Close</button>
+  </div>
+</dialog>
+
+<!-- Mobile Bottom Sheet: Public Catalog Filters -->
+<dialog id="public-filter-sheet" class="bottom-sheet-dialog" aria-labelledby="public-filter-sheet-title">
+  <div class="bottom-sheet-container">
+    <div class="bottom-sheet-handle-bar" aria-hidden="true"></div>
+    <div class="bottom-sheet-header">
+      <div class="sheet-title-group">
+        <button type="button" class="btn-sheet-close" onclick="closePublicFilterSheet()" aria-label="Close filters">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+        <h3 id="public-filter-sheet-title" class="bottom-sheet-title">Filters</h3>
+      </div>
+      <button type="button" class="btn-sheet-reset" onclick="resetPublicFiltersFromSheet()">Reset</button>
+    </div>
+
+    <div class="bottom-sheet-body">
+      <!-- Section: Categories -->
+      <div class="sheet-filter-group">
+        <h4 class="sheet-group-label">Filter by Category</h4>
+        <div class="sheet-pill-grid" id="public-sheet-category-pills">
+          <button type="button" class="sheet-filter-pill active" data-sheet-public-category="" onclick="selectSheetPublicCategory('')">
+            <span>All Categories</span>
+          </button>
+          <% if (typeof categories !== 'undefined' && categories.length > 0) { %>
+            <% categories.forEach(cat => { %>
+              <button type="button" class="sheet-filter-pill" data-sheet-public-category="<%= cat.category_id %>" onclick="selectSheetPublicCategory('<%= cat.category_id %>')">
+                <span><%= cat.category_name %></span>
+              </button>
+            <% }) %>
+          <% } %>
+        </div>
+      </div>
+
+      <!-- Section: Locations -->
+      <div class="sheet-filter-group">
+        <h4 class="sheet-group-label">Filter by Location</h4>
+        <div class="sheet-pill-grid" id="public-sheet-location-pills">
+          <button type="button" class="sheet-filter-pill active" data-sheet-public-location="" onclick="selectSheetPublicLocation('')">
+            <span>All Locations</span>
+          </button>
+          <% if (typeof locations !== 'undefined' && locations.length > 0) { %>
+            <% locations.forEach(loc => { %>
+              <button type="button" class="sheet-filter-pill" data-sheet-public-location="<%= loc.location_id %>" onclick="selectSheetPublicLocation('<%= loc.location_id %>')">
+                <span><%= loc.location_name %></span>
+              </button>
+            <% }) %>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <div class="bottom-sheet-footer">
+      <button type="button" class="btn-sheet-apply" onclick="applyPublicFilterSheet()">Apply Filters</button>
+    </div>
   </div>
 </dialog>
 

@@ -21,6 +21,12 @@ function toggleAdminSidebar() {
   if (!sidebar) return;
   const isCollapsed = sidebar.classList.toggle('sidebar-collapsed');
   localStorage.setItem(SIDEBAR_KEY, isCollapsed ? '1' : '0');
+  const btn = document.getElementById('admin-sidebar-toggle-btn');
+  if (btn) {
+    btn.setAttribute('aria-expanded', isCollapsed ? 'false' : 'true');
+    btn.setAttribute('title', isCollapsed ? 'Expand sidebar' : 'Collapse sidebar');
+    btn.classList.toggle('collapsed', isCollapsed);
+  }
 }
 
 // ── Mobile Bottom Sheet ────────────────────────────────────────────────────
@@ -74,6 +80,12 @@ document.addEventListener('DOMContentLoaded', () => {
   if (sidebarCollapsed && window.innerWidth > 768) {
     const sidebar = document.querySelector('.sidebar, .admin-sidebar');
     if (sidebar) sidebar.classList.add('sidebar-collapsed');
+    const toggleBtn = document.getElementById('admin-sidebar-toggle-btn');
+    if (toggleBtn) {
+      toggleBtn.setAttribute('aria-expanded', 'false');
+      toggleBtn.setAttribute('title', 'Expand sidebar');
+      toggleBtn.classList.add('collapsed');
+    }
   }
 
   const firstCard = document.querySelector('.found-item-card');
@@ -82,16 +94,21 @@ document.addEventListener('DOMContentLoaded', () => {
     firstCard.classList.add('selected');
   }
 
-  // Live search debouncing
+  // Live search debouncing & clear button toggle
   const searchInput = document.getElementById('catalog-search-input');
   if (searchInput) {
     let debounceTimer;
     searchInput.addEventListener('input', () => {
+      const clearBtn = document.getElementById('public-clear-search-btn');
+      if (clearBtn) clearBtn.classList.toggle('hidden', !searchInput.value);
       clearTimeout(debounceTimer);
       debounceTimer = setTimeout(() => {
-        applyFilters();
+        applyFilters(1);
       }, 300);
     });
+
+    updatePublicFilterBadge();
+    renderPublicActiveChips();
   }
 
   // Initialize staff dashboard tables pagination & filters if tables are on page
@@ -103,6 +120,14 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   if (document.getElementById('staff-audit-table')) {
     filterStaffAuditLogs();
+  }
+  if (document.getElementById('tab-panel-analytics') && !document.getElementById('tab-panel-analytics').classList.contains('hidden')) {
+    // Use requestAnimationFrame so the browser has painted and canvases have real dimensions
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        initAnalyticsCharts();
+      });
+    });
   }
 
   // Initialize public catalog pagination if on public view
@@ -116,7 +141,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Close bottom sheet on Escape key
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeMobileSheet();
+    if (e.key === 'Escape') {
+      closeMobileSheet();
+      closeInventoryFilterSheet();
+      closeClaimsFilterSheet();
+      closePublicFilterSheet();
+    }
+  });
+
+  // Close filter bottom sheets when clicking on the backdrop
+  ['inventory-filter-sheet', 'claims-filter-sheet', 'public-filter-sheet'].forEach((sheetId) => {
+    const dialog = document.getElementById(sheetId);
+    if (dialog) {
+      dialog.addEventListener('click', (e) => {
+        const rect = dialog.getBoundingClientRect();
+        const isInDialog = (
+          rect.top <= e.clientY &&
+          e.clientY <= rect.top + rect.height &&
+          rect.left <= e.clientX &&
+          e.clientX <= rect.left + rect.width
+        );
+        if (!isInDialog) {
+          dialog.close();
+        }
+      });
+    }
   });
 });
 
@@ -222,6 +271,177 @@ async function applyFilters(page = 1) {
   } finally {
     gridContainer.style.opacity = '1';
   }
+}
+
+// ── Public Catalog Bottom Sheet & Filter Sync ──────────────────────────────
+let _sheetPublicCategory = '';
+let _sheetPublicLocation = '';
+
+function openPublicFilterSheet() {
+  const catSelect = document.getElementById('filter-category');
+  const locSelect = document.getElementById('filter-location');
+  _sheetPublicCategory = catSelect ? catSelect.value : '';
+  _sheetPublicLocation = locSelect ? locSelect.value : '';
+  _syncSheetPublicPills(_sheetPublicCategory, _sheetPublicLocation);
+
+  const dialog = document.getElementById('public-filter-sheet');
+  if (dialog && typeof dialog.showModal === 'function') dialog.showModal();
+}
+
+function closePublicFilterSheet() {
+  const dialog = document.getElementById('public-filter-sheet');
+  if (dialog && dialog.open) dialog.close();
+}
+
+function selectSheetPublicCategory(val) {
+  _sheetPublicCategory = String(val || '');
+  document.querySelectorAll('#public-sheet-category-pills .sheet-filter-pill').forEach((pill) => {
+    pill.classList.toggle('active', pill.getAttribute('data-sheet-public-category') === _sheetPublicCategory);
+  });
+}
+
+function selectSheetPublicLocation(val) {
+  _sheetPublicLocation = String(val || '');
+  document.querySelectorAll('#public-sheet-location-pills .sheet-filter-pill').forEach((pill) => {
+    pill.classList.toggle('active', pill.getAttribute('data-sheet-public-location') === _sheetPublicLocation);
+  });
+}
+
+function _syncSheetPublicPills(cat, loc) {
+  document.querySelectorAll('#public-sheet-category-pills .sheet-filter-pill').forEach((pill) => {
+    pill.classList.toggle('active', pill.getAttribute('data-sheet-public-category') === String(cat || ''));
+  });
+  document.querySelectorAll('#public-sheet-location-pills .sheet-filter-pill').forEach((pill) => {
+    pill.classList.toggle('active', pill.getAttribute('data-sheet-public-location') === String(loc || ''));
+  });
+}
+
+function applyPublicFilterSheet() {
+  const catSelect = document.getElementById('filter-category');
+  const locSelect = document.getElementById('filter-location');
+  if (catSelect) catSelect.value = _sheetPublicCategory;
+  if (locSelect) locSelect.value = _sheetPublicLocation;
+
+  applyFilters(1);
+  renderPublicActiveChips();
+  updatePublicFilterBadge();
+  closePublicFilterSheet();
+}
+
+function resetPublicFiltersFromSheet() {
+  _sheetPublicCategory = '';
+  _sheetPublicLocation = '';
+  _syncSheetPublicPills('', '');
+}
+
+function onPublicDesktopFilterChange() {
+  applyFilters(1);
+  renderPublicActiveChips();
+  updatePublicFilterBadge();
+}
+
+function clearPublicSearch() {
+  const searchInput = document.getElementById('catalog-search-input');
+  const clearBtn = document.getElementById('public-clear-search-btn');
+  if (searchInput) {
+    searchInput.value = '';
+    if (clearBtn) clearBtn.classList.add('hidden');
+    applyFilters(1);
+  }
+}
+
+function updatePublicFilterBadge() {
+  const badge = document.getElementById('public-filter-badge');
+  const trigger = document.getElementById('public-filter-sheet-trigger');
+  const catVal = document.getElementById('filter-category')?.value || '';
+  const locVal = document.getElementById('filter-location')?.value || '';
+
+  let count = 0;
+  if (catVal) count++;
+  if (locVal) count++;
+
+  if (badge) {
+    badge.textContent = count;
+    badge.classList.toggle('hidden', count === 0);
+  }
+  if (trigger) {
+    trigger.classList.toggle('has-active-filters', count > 0);
+  }
+}
+
+function renderPublicActiveChips() {
+  const container = document.getElementById('public-active-chips');
+  if (!container) return;
+
+  const catSelect = document.getElementById('filter-category');
+  const locSelect = document.getElementById('filter-location');
+
+  const catVal = catSelect?.value || '';
+  const locVal = locSelect?.value || '';
+
+  const catText = catSelect?.selectedOptions?.[0]?.text || '';
+  const locText = locSelect?.selectedOptions?.[0]?.text || '';
+
+  const chips = [];
+  if (catVal && catText && catText !== 'All categories') {
+    chips.push({
+      type: 'category',
+      label: `Category: ${catText}`,
+      clear: () => {
+        if (catSelect) catSelect.value = '';
+        onPublicDesktopFilterChange();
+      }
+    });
+  }
+  if (locVal && locText && locText !== 'All campus locations') {
+    chips.push({
+      type: 'location',
+      label: `Location: ${locText}`,
+      clear: () => {
+        if (locSelect) locSelect.value = '';
+        onPublicDesktopFilterChange();
+      }
+    });
+  }
+
+  if (chips.length === 0) {
+    container.innerHTML = '';
+    container.classList.add('hidden');
+    return;
+  }
+
+  container.classList.remove('hidden');
+  container.innerHTML = `
+    <div class="active-chips-list">
+      ${chips
+        .map(
+          (c, idx) => `
+        <span class="active-filter-chip">
+          <span>${c.label}</span>
+          <button type="button" class="btn-chip-remove" onclick="removePublicChip(${idx})" aria-label="Remove ${c.label}">✕</button>
+        </span>
+      `
+        )
+        .join('')}
+      <button type="button" class="btn-clear-all-chips" onclick="clearAllPublicFilters()">Clear all</button>
+    </div>
+  `;
+
+  window._currentPublicChips = chips;
+}
+
+function removePublicChip(idx) {
+  if (window._currentPublicChips && window._currentPublicChips[idx]) {
+    window._currentPublicChips[idx].clear();
+  }
+}
+
+function clearAllPublicFilters() {
+  const catSelect = document.getElementById('filter-category');
+  const locSelect = document.getElementById('filter-location');
+  if (catSelect) catSelect.value = '';
+  if (locSelect) locSelect.value = '';
+  onPublicDesktopFilterChange();
 }
 
 function renderPublicPagination(meta) {
@@ -645,6 +865,7 @@ function switchDashboardTab(tabName) {
       items: 'Item Inventory',
       claims: 'Claims Verification',
       audit: 'Audit Trail',
+      analytics: 'Analytics & Trends',
     };
     breadcrumb.textContent = titles[tabName] || 'Item Inventory';
   }
@@ -672,6 +893,8 @@ function switchDashboardTab(tabName) {
     filterStaffClaims();
   } else if (tabName === 'audit') {
     filterStaffAuditLogs();
+  } else if (tabName === 'analytics') {
+    setTimeout(initAnalyticsCharts, 50);
   }
 }
 
@@ -845,9 +1068,211 @@ function resetStaffInventoryFilters() {
   if (catFilter) catFilter.value = 'all';
   if (statusFilter) statusFilter.value = 'all';
 
+  // Reset mobile sheet pills too
+  _syncSheetInventoryPills('all', 'all');
+
   invCurrentPage = 1;
   runStaffInventoryFilter();
+  renderInventoryActiveChips();
+  updateInventoryFilterBadge();
 }
+
+// ── Clear search helpers ────────────────────────────────────────────────────
+function clearInventorySearch() {
+  const input = document.getElementById('staff-item-search');
+  if (input) { input.value = ''; input.focus(); }
+  invCurrentPage = 1;
+  runStaffInventoryFilter();
+  renderInventoryActiveChips();
+  updateInventoryFilterBadge();
+}
+
+function clearClaimsSearch() {
+  const input = document.getElementById('staff-claim-search');
+  if (input) { input.value = ''; input.focus(); }
+  claimsCurrentPage = 1;
+  filterStaffClaims();
+  renderClaimsActiveChips();
+  updateClaimsFilterBadge();
+}
+
+// ── Inventory Bottom Sheet ──────────────────────────────────────────────────
+// Pending selection state (not yet applied)
+let _sheetInvCategory = 'all';
+let _sheetInvStatus = 'all';
+
+function openInventoryFilterSheet() {
+  // Sync sheet pills to current desktop select values
+  const catSelect = document.getElementById('staff-item-category-filter');
+  const statusSelect = document.getElementById('staff-item-status-filter');
+  _sheetInvCategory = catSelect ? catSelect.value : 'all';
+  _sheetInvStatus = statusSelect ? statusSelect.value : 'all';
+  _syncSheetInventoryPills(_sheetInvCategory, _sheetInvStatus);
+
+  const dialog = document.getElementById('inventory-filter-sheet');
+  if (dialog && typeof dialog.showModal === 'function') dialog.showModal();
+}
+
+function closeInventoryFilterSheet() {
+  const dialog = document.getElementById('inventory-filter-sheet');
+  if (dialog && dialog.open) dialog.close();
+}
+
+function selectSheetInventoryCategory(val) {
+  _sheetInvCategory = val;
+  document.querySelectorAll('#sheet-category-pills .sheet-filter-pill').forEach((pill) => {
+    pill.classList.toggle('active', pill.getAttribute('data-sheet-category') === val);
+  });
+}
+
+function selectSheetInventoryStatus(val) {
+  _sheetInvStatus = val;
+  document.querySelectorAll('#sheet-status-pills .sheet-filter-pill').forEach((pill) => {
+    pill.classList.toggle('active', pill.getAttribute('data-sheet-status') === val);
+  });
+}
+
+function _syncSheetInventoryPills(cat, status) {
+  document.querySelectorAll('#sheet-category-pills .sheet-filter-pill').forEach((pill) => {
+    pill.classList.toggle('active', pill.getAttribute('data-sheet-category') === cat);
+  });
+  document.querySelectorAll('#sheet-status-pills .sheet-filter-pill').forEach((pill) => {
+    pill.classList.toggle('active', pill.getAttribute('data-sheet-status') === status);
+  });
+}
+
+function applyInventoryFilterSheet() {
+  // Push sheet selections into the desktop select elements so runStaffInventoryFilter picks them up
+  const catSelect = document.getElementById('staff-item-category-filter');
+  const statusSelect = document.getElementById('staff-item-status-filter');
+  if (catSelect) catSelect.value = _sheetInvCategory;
+  if (statusSelect) statusSelect.value = _sheetInvStatus;
+
+  invCurrentPage = 1;
+  runStaffInventoryFilter();
+  renderInventoryActiveChips();
+  updateInventoryFilterBadge();
+  closeInventoryFilterSheet();
+}
+
+function resetInventoryFiltersFromSheet() {
+  _sheetInvCategory = 'all';
+  _sheetInvStatus = 'all';
+  _syncSheetInventoryPills('all', 'all');
+}
+
+// ── Inventory Active Filter Chips ──────────────────────────────────────────
+function renderInventoryActiveChips() {
+  const container = document.getElementById('inventory-active-chips');
+  if (!container) return;
+
+  const catSelect = document.getElementById('staff-item-category-filter');
+  const statusSelect = document.getElementById('staff-item-status-filter');
+  const search = (document.getElementById('staff-item-search')?.value || '').trim();
+  const cat = catSelect ? catSelect.value : 'all';
+  const status = statusSelect ? statusSelect.value : 'all';
+
+  const chips = [];
+
+  if (search) {
+    chips.push({ label: 'Search', value: search, clear: clearInventorySearch });
+  }
+  if (cat && cat !== 'all') {
+    const displayCat = catSelect?.options[catSelect.selectedIndex]?.text || cat;
+    chips.push({
+      label: 'Category',
+      value: displayCat,
+      clear: () => {
+        if (catSelect) catSelect.value = 'all';
+        _sheetInvCategory = 'all';
+        _syncSheetInventoryPills(_sheetInvCategory, _sheetInvStatus);
+        invCurrentPage = 1;
+        runStaffInventoryFilter();
+        renderInventoryActiveChips();
+        updateInventoryFilterBadge();
+      },
+    });
+  }
+  if (status && status !== 'all') {
+    const labels = { stored: 'Stored', processing: 'Processing', claimed: 'Claimed' };
+    chips.push({
+      label: 'Status',
+      value: labels[status] || status,
+      clear: () => {
+        if (statusSelect) statusSelect.value = 'all';
+        _sheetInvStatus = 'all';
+        _syncSheetInventoryPills(_sheetInvCategory, _sheetInvStatus);
+        invCurrentPage = 1;
+        runStaffInventoryFilter();
+        renderInventoryActiveChips();
+        updateInventoryFilterBadge();
+      },
+    });
+  }
+
+  if (chips.length === 0) {
+    container.classList.add('hidden');
+    container.innerHTML = '';
+    return;
+  }
+
+  container.classList.remove('hidden');
+  container.innerHTML = chips.map((chip, idx) => `
+    <span class="active-filter-chip" id="inv-chip-${idx}">
+      <span class="chip-label">${chip.label}:</span>
+      <span class="chip-value">${escapeHtml(chip.value)}</span>
+      <button type="button" class="btn-remove-chip" onclick="_removeInventoryChip(${idx})" aria-label="Remove ${chip.label} filter">✕</button>
+    </span>
+  `).join('') + (chips.length > 1 ? `<button type="button" class="btn-clear-all-chips" onclick="resetStaffInventoryFilters()">Clear all</button>` : '');
+
+  // Store chip clear callbacks on the container for retrieval
+  container._chipClears = chips.map((c) => c.clear);
+}
+
+function _removeInventoryChip(idx) {
+  const container = document.getElementById('inventory-active-chips');
+  if (container && container._chipClears && container._chipClears[idx]) {
+    container._chipClears[idx]();
+  }
+}
+
+function updateInventoryFilterBadge() {
+  const catSelect = document.getElementById('staff-item-category-filter');
+  const statusSelect = document.getElementById('staff-item-status-filter');
+  const search = (document.getElementById('staff-item-search')?.value || '').trim();
+  const cat = catSelect ? catSelect.value : 'all';
+  const status = statusSelect ? statusSelect.value : 'all';
+
+  let count = 0;
+  if (search) count++;
+  if (cat && cat !== 'all') count++;
+  if (status && status !== 'all') count++;
+
+  const badge = document.getElementById('inv-filter-badge');
+  const trigger = document.getElementById('inv-filter-sheet-trigger');
+  const clearBtn = document.getElementById('inv-clear-search-btn');
+
+  if (badge) {
+    badge.textContent = String(count);
+    badge.classList.toggle('hidden', count === 0);
+  }
+  if (trigger) {
+    trigger.classList.toggle('has-active-filters', count > 0);
+  }
+  if (clearBtn) {
+    clearBtn.classList.toggle('hidden', !search);
+  }
+}
+
+// Patch runStaffInventoryFilter to also update chips + badge on every run
+(function () {
+  const _orig = runStaffInventoryFilter;
+  runStaffInventoryFilter = function () {
+    _orig();
+    renderInventoryActiveChips();
+    updateInventoryFilterBadge();
+  };
+})();
 
 let currentClaimFilterStatus = 'all';
 let claimsCurrentPage = 1;
@@ -1014,6 +1439,162 @@ function changeClaimsPageSize(newSize) {
   claimsCurrentPage = 1;
   filterStaffClaims();
 }
+
+// ── Claims Bottom Sheet ─────────────────────────────────────────────────────
+let _sheetClaimStatus = 'all';
+
+function openClaimsFilterSheet() {
+  // Sync sheet pills to current active claim filter
+  _sheetClaimStatus = currentClaimFilterStatus;
+  _syncSheetClaimPills(_sheetClaimStatus);
+
+  const dialog = document.getElementById('claims-filter-sheet');
+  if (dialog && typeof dialog.showModal === 'function') dialog.showModal();
+}
+
+function closeClaimsFilterSheet() {
+  const dialog = document.getElementById('claims-filter-sheet');
+  if (dialog && dialog.open) dialog.close();
+}
+
+function selectSheetClaimStatus(val) {
+  _sheetClaimStatus = val;
+  _syncSheetClaimPills(val);
+}
+
+function _syncSheetClaimPills(status) {
+  document.querySelectorAll('#sheet-claim-status-pills .sheet-filter-pill').forEach((pill) => {
+    pill.classList.toggle('active', pill.getAttribute('data-sheet-claim-status') === status);
+  });
+}
+
+function applyClaimsFilterSheet() {
+  // Apply sheet selection to the desktop pill selectors
+  const targetBtn = document.querySelector(`.filter-pill-btn[data-filter="${_sheetClaimStatus}"]`);
+  setClaimFilter(_sheetClaimStatus, targetBtn);
+  renderClaimsActiveChips();
+  updateClaimsFilterBadge();
+  closeClaimsFilterSheet();
+}
+
+function resetClaimsFiltersFromSheet() {
+  _sheetClaimStatus = 'all';
+  _syncSheetClaimPills('all');
+}
+
+// ── Claims Active Filter Chips ──────────────────────────────────────────────
+function renderClaimsActiveChips() {
+  const container = document.getElementById('claims-active-chips');
+  if (!container) return;
+
+  const search = (document.getElementById('staff-claim-search')?.value || '').trim();
+  const status = currentClaimFilterStatus;
+
+  const chips = [];
+
+  if (search) {
+    chips.push({ label: 'Search', value: search, clear: clearClaimsSearch });
+  }
+  if (status && status !== 'all') {
+    const labels = { pending: 'Pending', accepted: 'Approved', rejected: 'Rejected' };
+    chips.push({
+      label: 'Status',
+      value: labels[status] || status,
+      clear: () => {
+        const targetBtn = document.querySelector('.filter-pill-btn[data-filter="all"]');
+        setClaimFilter('all', targetBtn);
+        _sheetClaimStatus = 'all';
+        _syncSheetClaimPills('all');
+        renderClaimsActiveChips();
+        updateClaimsFilterBadge();
+      },
+    });
+  }
+
+  if (chips.length === 0) {
+    container.classList.add('hidden');
+    container.innerHTML = '';
+    return;
+  }
+
+  container.classList.remove('hidden');
+  container.innerHTML = chips.map((chip, idx) => `
+    <span class="active-filter-chip" id="claim-chip-${idx}">
+      <span class="chip-label">${chip.label}:</span>
+      <span class="chip-value">${escapeHtml(chip.value)}</span>
+      <button type="button" class="btn-remove-chip" onclick="_removeClaimsChip(${idx})" aria-label="Remove ${chip.label} filter">✕</button>
+    </span>
+  `).join('') + (chips.length > 1 ? `<button type="button" class="btn-clear-all-chips" onclick="_clearAllClaimsFilters()">Clear all</button>` : '');
+
+  container._chipClears = chips.map((c) => c.clear);
+}
+
+function _removeClaimsChip(idx) {
+  const container = document.getElementById('claims-active-chips');
+  if (container && container._chipClears && container._chipClears[idx]) {
+    container._chipClears[idx]();
+  }
+}
+
+function _clearAllClaimsFilters() {
+  const input = document.getElementById('staff-claim-search');
+  if (input) input.value = '';
+  const targetBtn = document.querySelector('.filter-pill-btn[data-filter="all"]');
+  setClaimFilter('all', targetBtn);
+  _sheetClaimStatus = 'all';
+  _syncSheetClaimPills('all');
+  claimsCurrentPage = 1;
+  filterStaffClaims();
+  renderClaimsActiveChips();
+  updateClaimsFilterBadge();
+}
+
+function updateClaimsFilterBadge() {
+  const search = (document.getElementById('staff-claim-search')?.value || '').trim();
+  const status = currentClaimFilterStatus;
+
+  let count = 0;
+  if (search) count++;
+  if (status && status !== 'all') count++;
+
+  const badge = document.getElementById('claim-filter-badge');
+  const trigger = document.getElementById('claim-filter-sheet-trigger');
+  const clearBtn = document.getElementById('claim-clear-search-btn');
+
+  if (badge) {
+    badge.textContent = String(count);
+    badge.classList.toggle('hidden', count === 0);
+  }
+  if (trigger) {
+    trigger.classList.toggle('has-active-filters', count > 0);
+  }
+  if (clearBtn) {
+    clearBtn.classList.toggle('hidden', !search);
+  }
+}
+
+// Patch filterStaffClaims to also update chips + badge
+(function () {
+  const _orig = filterStaffClaims;
+  filterStaffClaims = function () {
+    _orig();
+    renderClaimsActiveChips();
+    updateClaimsFilterBadge();
+  };
+})();
+
+// Also update chips when setClaimFilter is called (for desktop pill clicks)
+(function () {
+  const _orig = setClaimFilter;
+  setClaimFilter = function (status, btnEl) {
+    _orig(status, btnEl);
+    _sheetClaimStatus = status;
+    _syncSheetClaimPills(status);
+    renderClaimsActiveChips();
+    updateClaimsFilterBadge();
+  };
+})();
+
 
 let auditCurrentPage = 1;
 let auditPageSize = 10;
@@ -1636,3 +2217,349 @@ function closeItemImagePreview() {
     dialog.close();
   }
 }
+
+// ── Logout Confirmation Dialog ─────────────────────────────────────────────
+function openLogoutDialog() {
+  const dialog = document.getElementById('logout-confirm-dialog');
+  if (dialog && typeof dialog.showModal === 'function') {
+    dialog.showModal();
+  }
+}
+
+function closeLogoutDialog() {
+  const dialog = document.getElementById('logout-confirm-dialog');
+  if (dialog && typeof dialog.close === 'function') {
+    dialog.close();
+  }
+}
+
+// ── 10. GA4-Style Analytics & Telemetry Charts ──────────────────────────────
+let analyticsChartsInitialized = false;
+let trendChartInstance = null;
+let categoryChartInstance = null;
+let dynamicsChartInstance = null;
+let locationChartInstance = null;
+
+function initAnalyticsCharts() {
+  const panel = document.getElementById('tab-panel-analytics');
+  if (!panel || panel.classList.contains('hidden')) return;
+
+  if (typeof Chart === 'undefined') {
+    setTimeout(initAnalyticsCharts, 50);
+    return;
+  }
+
+  const testCanvas = document.getElementById('analyticsTrendChart');
+  if (testCanvas && testCanvas.clientWidth === 0) {
+    // If canvas has 0 width, layout hasn't painted yet - wait for next frame
+    requestAnimationFrame(() => {
+      setTimeout(initAnalyticsCharts, 30);
+    });
+    return;
+  }
+
+  if (analyticsChartsInitialized) {
+    [trendChartInstance, categoryChartInstance, dynamicsChartInstance, locationChartInstance].forEach((chart) => {
+      if (chart) {
+        chart.resize();
+        chart.update();
+      }
+    });
+    return;
+  }
+
+  const dataScript = document.getElementById('analytics-data');
+  let data = { items: [], claims: [], categories: [], locations: [] };
+  if (dataScript) {
+    try {
+      data = JSON.parse(dataScript.textContent);
+    } catch (e) {
+      console.error('Failed to parse analytics data', e);
+    }
+  }
+
+  const items = Array.isArray(data.items) ? data.items : [];
+  const claims = Array.isArray(data.claims) ? data.claims : [];
+
+  // Generate 28 days timeline
+  const days = [];
+  const dayLabels = [];
+  const intakeCounts = [];
+  const claimCounts = [];
+  const cumulativeReturns = [];
+
+  const now = new Date();
+  for (let i = 27; i >= 0; i--) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    const dateStr = d.toISOString().slice(0, 10);
+    days.push(dateStr);
+    dayLabels.push(d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+  }
+
+  let runningReturnTotal = 0;
+  days.forEach((dayStr) => {
+    const dayItems = items.filter((item) => {
+      const itemDate = (item.created_at || '').slice(0, 10);
+      return itemDate === dayStr;
+    });
+    const dayClaims = claims.filter((claim) => {
+      const claimDate = (claim.created_at || '').slice(0, 10);
+      return claimDate === dayStr && claim.status === 'accepted';
+    });
+    intakeCounts.push(dayItems.length);
+    claimCounts.push(dayClaims.length);
+    runningReturnTotal += dayClaims.length;
+    cumulativeReturns.push(runningReturnTotal);
+  });
+
+  // Category counts
+  const categoryMap = {};
+  items.forEach((item) => {
+    const cat = item.category || 'Uncategorized';
+    categoryMap[cat] = (categoryMap[cat] || 0) + 1;
+  });
+  const catEntries = Object.entries(categoryMap).sort((a, b) => b[1] - a[1]);
+  const catLabels = catEntries.map((e) => e[0]);
+  const catCounts = catEntries.map((e) => e[1]);
+
+  const topCatEl = document.getElementById('analytics-top-category');
+  if (topCatEl && catEntries.length > 0) {
+    topCatEl.textContent = `${catEntries[0][0]} (${catEntries[0][1]})`;
+  }
+
+  // Location counts
+  const locationMap = {};
+  items.forEach((item) => {
+    const loc = item.location || 'Campus Grounds';
+    locationMap[loc] = (locationMap[loc] || 0) + 1;
+  });
+  const locEntries = Object.entries(locationMap).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const locLabels = locEntries.map((e) => e[0]);
+  const locCounts = locEntries.map((e) => e[1]);
+
+  const topLocEl = document.getElementById('analytics-top-location');
+  if (topLocEl && locEntries.length > 0) {
+    topLocEl.textContent = `${locEntries[0][0]} (${locEntries[0][1]})`;
+  }
+
+  // 1. Dual-line Trend Chart (GA4 Style)
+  const trendCtx = document.getElementById('analyticsTrendChart');
+  if (trendCtx) {
+    trendChartInstance = new Chart(trendCtx, {
+      type: 'line',
+      data: {
+        labels: dayLabels,
+        datasets: [
+          {
+            label: 'Logged Items',
+            data: intakeCounts,
+            borderColor: '#F97316',
+            backgroundColor: 'rgba(249, 115, 22, 0.08)',
+            fill: true,
+            tension: 0.4,
+            borderWidth: 2.2,
+            pointRadius: 2,
+            pointHoverRadius: 5,
+          },
+          {
+            label: 'Reunited Claims',
+            data: claimCounts,
+            borderColor: '#0284C7',
+            backgroundColor: 'rgba(2, 132, 199, 0.05)',
+            fill: true,
+            tension: 0.4,
+            borderWidth: 2.2,
+            pointRadius: 2,
+            pointHoverRadius: 5,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#0F172A',
+            padding: 10,
+            cornerRadius: 8,
+          },
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: {
+              maxTicksLimit: window.innerWidth < 640 ? 4 : 7,
+              font: { size: window.innerWidth < 640 ? 10 : 11 },
+              color: '#94A3B8',
+            },
+          },
+          y: {
+            beginAtZero: true,
+            grid: { color: 'rgba(226, 232, 240, 0.7)' },
+            ticks: { precision: 0, font: { size: 11 }, color: '#94A3B8' },
+          },
+        },
+      },
+    });
+  }
+
+  // 2. Category Breakdown Chart (Bar Chart)
+  const catCtx = document.getElementById('analyticsCategoryChart');
+  if (catCtx) {
+    categoryChartInstance = new Chart(catCtx, {
+      type: 'bar',
+      data: {
+        labels: catLabels.length ? catLabels : ['Electronics', 'Accessories', 'Documents', 'Books'],
+        datasets: [
+          {
+            label: 'Logged Assets',
+            data: catCounts.length ? catCounts : [0, 0, 0, 0],
+            backgroundColor: '#F59E0B',
+            borderRadius: 6,
+            maxBarThickness: 32,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { backgroundColor: '#0F172A', padding: 10, cornerRadius: 8 },
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: {
+              font: { size: window.innerWidth < 640 ? 10 : 11 },
+              color: '#94A3B8',
+              maxRotation: window.innerWidth < 640 ? 30 : 0,
+              autoSkip: true,
+              callback: function (val) {
+                const label = this.getLabelForValue(val) || '';
+                return window.innerWidth < 640 && label.length > 11 ? label.slice(0, 9) + '…' : label;
+              },
+            },
+          },
+          y: {
+            beginAtZero: true,
+            grid: { color: 'rgba(226, 232, 240, 0.7)' },
+            ticks: { precision: 0, font: { size: 11 }, color: '#94A3B8' },
+          },
+        },
+      },
+    });
+  }
+
+  // 3. Dynamics Chart (Line Chart)
+  const dynCtx = document.getElementById('analyticsDynamicsChart');
+  if (dynCtx) {
+    dynamicsChartInstance = new Chart(dynCtx, {
+      type: 'line',
+      data: {
+        labels: dayLabels,
+        datasets: [
+          {
+            label: 'Cumulative Claims Released',
+            data: cumulativeReturns,
+            borderColor: '#10B981',
+            backgroundColor: 'rgba(16, 185, 129, 0.08)',
+            fill: true,
+            tension: 0.4,
+            borderWidth: 2.2,
+            pointRadius: 2,
+            pointHoverRadius: 5,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { backgroundColor: '#0F172A', padding: 10, cornerRadius: 8 },
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: {
+              maxTicksLimit: window.innerWidth < 640 ? 4 : 7,
+              font: { size: window.innerWidth < 640 ? 10 : 11 },
+              color: '#94A3B8',
+            },
+          },
+          y: {
+            beginAtZero: true,
+            grid: { color: 'rgba(226, 232, 240, 0.7)' },
+            ticks: { precision: 0, font: { size: 11 }, color: '#94A3B8' },
+          },
+        },
+      },
+    });
+  }
+
+  // 4. Location Chart (Horizontal Bar)
+  const locCtx = document.getElementById('analyticsLocationChart');
+  if (locCtx) {
+    locationChartInstance = new Chart(locCtx, {
+      type: 'bar',
+      data: {
+        labels: locLabels.length ? locLabels : ['Library', 'Gymnasium', 'Cafeteria', 'Admin Bldg'],
+        datasets: [
+          {
+            label: 'Found Properties',
+            data: locCounts.length ? locCounts : [0, 0, 0, 0],
+            backgroundColor: '#6366F1',
+            borderRadius: 6,
+            maxBarThickness: 24,
+          },
+        ],
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { backgroundColor: '#0F172A', padding: 10, cornerRadius: 8 },
+        },
+        scales: {
+          x: {
+            beginAtZero: true,
+            grid: { color: 'rgba(226, 232, 240, 0.7)' },
+            ticks: { precision: 0, font: { size: 11 }, color: '#94A3B8' },
+          },
+          y: {
+            grid: { display: false },
+            ticks: {
+              font: { size: window.innerWidth < 640 ? 10 : 11 },
+              color: '#64748B',
+              callback: function (val) {
+                const label = this.getLabelForValue(val) || '';
+                return window.innerWidth < 640 && label.length > 13 ? label.slice(0, 11) + '…' : label;
+              },
+            },
+          },
+        },
+      },
+    });
+  }
+
+  analyticsChartsInitialized = true;
+}
+
+window.addEventListener('resize', () => {
+  if (analyticsChartsInitialized) {
+    [trendChartInstance, categoryChartInstance, dynamicsChartInstance, locationChartInstance].forEach((chart) => {
+      if (chart) chart.resize();
+    });
+  }
+});
+
+window.addEventListener('load', () => {
+  initAnalyticsCharts();
+});
+
+

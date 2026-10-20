@@ -102,7 +102,7 @@ router.get('/admin/found-items/new', async (req, res, next) => {
 // GET /login - Staff & Admin Unified Login page
 router.get('/login', (req, res) => {
   if (req.session?.userId) {
-    return res.redirect('/admin/found-items/new');
+    return res.redirect('/dashboard?tab=analytics');
   }
   res.render('login', {
     title: 'Staff & Admin Login | CSPC Lost & Found',
@@ -132,7 +132,7 @@ router.post('/login', async (req, res) => {
       if (redirectUrl && redirectUrl.startsWith('/')) {
         return res.redirect(redirectUrl);
       }
-      return res.redirect('/admin/found-items/new');
+      return res.redirect('/dashboard?tab=analytics');
     });
   } catch (err) {
     const message = encodeURIComponent(err.message || 'Invalid credentials');
@@ -176,10 +176,6 @@ router.get('/dashboard', async (req, res, next) => {
       });
     }
 
-    // Admins without specific tab redirect to Add Item console
-    if (req.session.role === 'admin' && !req.query.tab) {
-      return res.redirect('/admin/found-items/new');
-    }
 
     const [categories, locations, itemsResult, claimsResult, auditLogs, user] = await Promise.all([
       findAllCategories(pool).catch(() => []),
@@ -223,7 +219,7 @@ router.get('/dashboard', async (req, res, next) => {
       auditLogs: auditLogs || [],
       role: req.session.role,
       user: resolvedUser,
-      activeTab: req.query.tab || 'items',
+      activeTab: req.query.tab || 'analytics',
     });
   } catch (err) {
     next(err);
