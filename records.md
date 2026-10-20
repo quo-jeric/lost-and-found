@@ -707,6 +707,34 @@ All migrations are tracked in `schema_migrations` with SHA-256 checksums. Applie
 - **Testing & Verification**:
   - Verified public mobile tab order, template compilation, and mobile staff topbar responsive rules; `git diff --check` passed.
 
+### Milestone 32: Desktop Sidebar Collapse Icon Fix & Add Item Hamburger Toggle
+- **Add Item Console Hamburger Script Inclusion** ([`views/admin/add-item.ejs`](./views/admin/add-item.ejs)):
+  - Added `<script src="/js/app.js"></script>` to the Add Item view template, restoring the missing `toggleAdminSidebar()` function and localStorage state persistence on desktop/tablet views.
+  - Added descriptive `title` tooltips to admin and guard sidebar navigation items across [`views/admin/add-item.ejs`](./views/admin/add-item.ejs) and [`views/dashboard.ejs`](./views/dashboard.ejs).
+- **Desktop Sidebar Collapse Styling Fix** ([`public/css/style.css`](./public/css/style.css)):
+  - Fixed icon disappearance when the desktop sidebar is collapsed (`.sidebar-collapsed`): reset sidebar outer padding to `0`, centered 44×44px square pills with rounded corners, and enforced `flex-shrink: 0`, explicit 20×20px dimensions, and `display: block` on SVG icons.
+  - Added smooth transition properties to `.admin-sidebar` for seamless collapse animations matching the public sidebar.
+- **Testing & Verification**:
+  - Verified test suite passes (143/143 tests passing); verified desktop collapse layout and script availability.
+
+### Milestone 33: Public Catalog Shortcut Relocation to Topbar Header
+- **Sidebar Menu Cleansing** ([`views/dashboard.ejs`](./views/dashboard.ejs), [`views/admin/add-item.ejs`](./views/admin/add-item.ejs)):
+  - Removed "Public Catalog View" from the internal `ADMIN WORKSPACE` / `SECURITY WORKSPACE` sidebar action list to maintain strict focus on admin/guard operational tasks.
+- **Topbar Header Public Link** ([`views/dashboard.ejs`](./views/dashboard.ejs), [`views/admin/add-item.ejs`](./views/admin/add-item.ejs), [`public/css/style.css`](./public/css/style.css)):
+  - Added `.btn-topbar-public` (`[ 🌐 View Public Site ↗ ]`) in the top navigation header on desktop view.
+  - Added responsive styling for mobile view (`max-width: 768px`) transforming it into a clean `32×32px` icon button `[ 🌐 ]` beside the notification bell, providing 1-tap public catalog preview access from mobile devices.
+- **Testing & Verification**:
+  - Verified all 143 unit tests passing (`npm test`); verified responsive topbar layout on desktop and mobile viewports.
+
+### Milestone 34: Form Input Sanitization & Normalization (Email & Phone Numbers)
+- **Backend Email Normalization & Phone Sanitization** ([`services/claims-service.js`](./services/claims-service.js)):
+  - Normalized `claimant_email` to lowercase (`.toLowerCase().trim()`) before persistence and format check to prevent case duplication mismatches.
+  - Sanitized `claimant_phone` by stripping presentation characters (spaces, dashes, parentheses, dots: `replace(/[\s\-().]/g, '')`) and enforced format validation with `/^\+?[0-9]{7,15}$/` while preserving 20-character caps.
+- **Client-Side Validation & Formatting** ([`public/js/app.js`](./public/js/app.js)):
+  - Added frontend normalization and regex validation for email and phone numbers in both `submitPublicClaim` and `submitInPersonClaim` before API dispatch, offering immediate toast feedback on malformed contacts.
+- **Testing & Verification**:
+  - All 143 unit tests passing (`npm test`); verified clean validation errors and successful formatting coercion.
+
 ---
 
 ## 7. Upcoming Roadmap & Pending Tasks
@@ -731,3 +759,22 @@ All migrations are tracked in `schema_migrations` with SHA-256 checksums. Applie
   - `tests/integration/auth.test.js`: login, logout, /me, 401 on protected routes.
   - `tests/integration/items.test.js`: public GET, protected POST/PUT/DELETE.
   - `tests/integration/claims.test.js`: public POST, staff GET/PATCH.
+
+---
+
+## 8. Bug Fixes & Patches
+
+### Patch 35: Guard Mobile Nav — "Add Item" Tab Disappeared After Tab Switch
+- **Root Cause** ([`views/dashboard.ejs`](./views/dashboard.ejs)):
+  - The mobile bottom navigation bar rendered the "Add Item" tab inside a `<% if (role === 'admin') { %>` EJS conditional, meaning guard-role users never had the button in the DOM.
+  - Since `switchDashboardTab()` clears `.active` from all `.mob-tab-item` elements and re-applies it by ID, and the button didn't exist for guards, switching tabs caused the active highlight to land nowhere, creating the illusion that the entire Add Item action was lost.
+- **Fix**: Removed the `role === 'admin'` guard from the mobile Add Item tab. Both admin and guard roles need access to `/admin/found-items/new` (already enforced server-side by route middleware), so the mobile button must be visible to all staff.
+- **Files Changed**: [`views/dashboard.ejs`](./views/dashboard.ejs) — lines ~1154–1161.
+
+### Patch 36: Public View Sidebar Logo Appears Squashed / Cropped
+- **Root Cause** ([`views/index.ejs`](./views/index.ejs)):
+  - The CSPC logo `<img>` inside `.brand-shield-box` used `object-fit: cover`, which crops and fills the container box. Because the CSPC seal is circular and narrower than the container's aspect ratio, `cover` caused visible stretching/squashing on the public view sidebar.
+  - The dashboard sidebar logo used `.brand-crest-img` which also has `object-fit: cover` in CSS, but the difference in perceived quality was noted by the user comparing screenshots side-by-side.
+- **Fix**: Changed `object-fit: cover` → `object-fit: contain` on the public sidebar logo `<img>` so the full crest is visible without distortion, matching the intended round logo display. The white background on the container ensures no letterboxing artefacts appear.
+- **Files Changed**: [`views/index.ejs`](./views/index.ejs) — line ~9.
+
