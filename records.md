@@ -759,3 +759,22 @@ All migrations are tracked in `schema_migrations` with SHA-256 checksums. Applie
   - `tests/integration/auth.test.js`: login, logout, /me, 401 on protected routes.
   - `tests/integration/items.test.js`: public GET, protected POST/PUT/DELETE.
   - `tests/integration/claims.test.js`: public POST, staff GET/PATCH.
+
+---
+
+## 8. Bug Fixes & Patches
+
+### Patch 35: Guard Mobile Nav — "Add Item" Tab Disappeared After Tab Switch
+- **Root Cause** ([`views/dashboard.ejs`](./views/dashboard.ejs)):
+  - The mobile bottom navigation bar rendered the "Add Item" tab inside a `<% if (role === 'admin') { %>` EJS conditional, meaning guard-role users never had the button in the DOM.
+  - Since `switchDashboardTab()` clears `.active` from all `.mob-tab-item` elements and re-applies it by ID, and the button didn't exist for guards, switching tabs caused the active highlight to land nowhere, creating the illusion that the entire Add Item action was lost.
+- **Fix**: Removed the `role === 'admin'` guard from the mobile Add Item tab. Both admin and guard roles need access to `/admin/found-items/new` (already enforced server-side by route middleware), so the mobile button must be visible to all staff.
+- **Files Changed**: [`views/dashboard.ejs`](./views/dashboard.ejs) — lines ~1154–1161.
+
+### Patch 36: Public View Sidebar Logo Appears Squashed / Cropped
+- **Root Cause** ([`views/index.ejs`](./views/index.ejs)):
+  - The CSPC logo `<img>` inside `.brand-shield-box` used `object-fit: cover`, which crops and fills the container box. Because the CSPC seal is circular and narrower than the container's aspect ratio, `cover` caused visible stretching/squashing on the public view sidebar.
+  - The dashboard sidebar logo used `.brand-crest-img` which also has `object-fit: cover` in CSS, but the difference in perceived quality was noted by the user comparing screenshots side-by-side.
+- **Fix**: Changed `object-fit: cover` → `object-fit: contain` on the public sidebar logo `<img>` so the full crest is visible without distortion, matching the intended round logo display. The white background on the container ensures no letterboxing artefacts appear.
+- **Files Changed**: [`views/index.ejs`](./views/index.ejs) — line ~9.
+

@@ -1151,14 +1151,12 @@
     </svg>
     <span class="mob-tab-label">Claims</span>
   </a>
-  <% if (role === 'admin') { %>
-    <a href="/admin/found-items/new" class="mob-tab-item accent-tab" id="mob-tab-add">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-        <circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line>
-      </svg>
-      <span class="mob-tab-label">Add Item</span>
-    </a>
-  <% } %>
+  <a href="/admin/found-items/new" class="mob-tab-item accent-tab" id="mob-tab-add">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+      <circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line>
+    </svg>
+    <span class="mob-tab-label">Add Item</span>
+  </a>
   <a href="/dashboard?tab=audit" class="mob-tab-item <%= activeTab === 'audit' ? 'active' : '' %>" id="mob-tab-audit" aria-current="<%= activeTab === 'audit' ? 'page' : 'false' %>" onclick="switchDashboardTab('audit'); return false;">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>

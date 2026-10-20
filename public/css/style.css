@@ -127,15 +127,24 @@ body {
 }
 
 .brand-shield-box {
-  width: 44px;
-  height: 44px;
-  border-radius: var(--radius-md);
-  border: 1.5px solid #0891B2;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  border: 1.5px solid #2563EB;
+  background: #FFFFFF;
+  color: #2563EB;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #0891B2;
-  background: #F0FDFA;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.brand-shield-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
 }
 
 .brand-info {
