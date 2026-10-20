@@ -4,9 +4,9 @@
 -- Database name and passwords below should be updated to match your environment.
 
 -- Part A: Run before the first migration
-CREATE USER IF NOT EXISTS 'laf_app'@'%' IDENTIFIED BY 'james_app_password';
-CREATE USER IF NOT EXISTS 'laf_migrate'@'%' IDENTIFIED BY 'james_migrate_password';
-CREATE USER IF NOT EXISTS 'laf_test'@'%' IDENTIFIED BY 'james_test_password';
+CREATE USER IF NOT EXISTS 'laf_app'@'%' IDENTIFIED BY 'change_app_password';
+CREATE USER IF NOT EXISTS 'laf_migrate'@'%' IDENTIFIED BY 'change_migrate_password';
+CREATE USER IF NOT EXISTS 'laf_test'@'%' IDENTIFIED BY 'change_test_password';
 
 GRANT SELECT, INSERT, UPDATE ON lost_and_found_db.* TO 'laf_app'@'%';
 GRANT SELECT, INSERT, UPDATE, CREATE, ALTER, INDEX, REFERENCES, TRIGGER

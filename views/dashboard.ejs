@@ -1,94 +1,131 @@
 <%- include('partials/head', { title: title || 'Staff Dashboard' }) %>
 
-<div class="admin-app-layout">
-  <!-- Left Sidebar (ADMIN / SECURITY WORKSPACE) -->
-  <aside class="admin-sidebar">
-    <div class="sidebar-top-branding">
-      <a href="/" class="brand-link" title="Return to Public Catalog">
-        <div class="brand-crest-box">
-          <img src="/images/CSPCLogo.jpeg" alt="CSPC Logo" class="brand-crest-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-          <svg style="display: none;" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-            <path d="M9 12l2 2 4-4"></path>
-          </svg>
-        </div>
-        <div class="brand-text">
-          <div class="brand-title-line">
-            <div class="brand-abbr">CSPC</div>
-            <span class="brand-sep">·</span>
-            <div class="brand-sub">Lost & Found</div>
+  <div class="admin-app-layout">
+    <!-- Left Sidebar (ADMIN / SECURITY WORKSPACE) -->
+    <aside class="admin-sidebar">
+      <div class="sidebar-top-branding">
+        <a href="/" class="brand-link" title="Return to Public Catalog">
+          <div class="brand-crest-box">
+            <img src="/images/CSPCLogo.jpeg" alt="CSPC Logo" class="brand-crest-img"
+              onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+            <svg style="display: none;" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor"
+              stroke-width="2.2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              <path d="M9 12l2 2 4-4"></path>
+            </svg>
           </div>
-        </div>
-      </a>
-      <div class="brand-college-tag">CAMARINES SUR POLYTECHNIC COLLEGES</div>
-    </div>
-
-    <!-- Navigation Links -->
-    <div class="admin-nav-section">
-      <div class="admin-section-label"><%= role === 'admin' ? 'ADMIN WORKSPACE' : 'SECURITY WORKSPACE' %></div>
-      <nav class="admin-nav-menu">
-        <a href="/admin/found-items/new" class="admin-nav-item" title="Add Found Item">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line>
-          </svg>
-          <span>ADD FOUND ITEM</span>
+          <div class="brand-text">
+            <div class="brand-title-line">
+              <div class="brand-abbr">CSPC</div>
+              <span class="brand-sep">·</span>
+              <div class="brand-sub">Lost & Found</div>
+            </div>
+          </div>
         </a>
-
-        <a href="/dashboard?tab=items" class="admin-nav-item <%= activeTab === 'items' ? 'active' : '' %>" id="side-link-items" onclick="switchDashboardTab('items'); return false;" title="Item Inventory">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect>
-          </svg>
-          <span>Item Inventory</span>
-        </a>
-
-        <a href="/dashboard?tab=claims" class="admin-nav-item <%= activeTab === 'claims' ? 'active' : '' %>" id="side-link-claims" onclick="switchDashboardTab('claims'); return false;" title="Claims Verification">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-            <polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line>
-          </svg>
-          <span>Claims Verification</span>
-        </a>
-
-        <a href="/dashboard?tab=audit" class="admin-nav-item <%= activeTab === 'audit' ? 'active' : '' %>" id="side-link-audit" onclick="switchDashboardTab('audit'); return false;" title="Audit Trail">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-            <path d="M9 12l2 2 4-4"></path>
-          </svg>
-          <span>Audit Trail</span>
-        </a>
-      </nav>
-    </div>
-
-    <!-- Sidebar Bottom: Campus Safety Card & User Profile -->
-    <div class="admin-sidebar-bottom">
-      <div class="safety-advisory-card">
-        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#2563EB" stroke-width="2">
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-          <path d="M9 12l2 2 4-4"></path>
-        </svg>
-        <div class="safety-card-title">A safer campus, together.</div>
-        <p class="safety-card-text">
-          Keep every item accounted for. Verify identity before release.
-        </p>
+        <div class="brand-college-tag">CAMARINES SUR POLYTECHNIC COLLEGES</div>
       </div>
 
-      <div class="admin-user-profile-strip">
-        <div class="user-avatar-initials">
-          <%= (user?.fullName || user?.full_name || (role === 'admin' ? 'Juan Reyes' : 'Ana Cruz')).split(' ').map(n => n[0]).slice(0, 2).join('') %>
+      <!-- Navigation Links -->
+      <div class="admin-nav-section">
+        <div class="admin-section-label">
+          <%= role==='admin' ? 'ADMIN WORKSPACE' : 'SECURITY WORKSPACE' %>
+        </div>
+        <nav class="admin-nav-menu">
+          <a href="/dashboard?tab=analytics" class="admin-nav-item <%= activeTab === 'analytics' ? 'active' : '' %>"
+            id="side-link-analytics" onclick="switchDashboardTab('analytics'); return false;" title="Analytics & Trends">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="20" x2="18" y2="10"></line>
+              <line x1="12" y1="20" x2="12" y2="4"></line>
+              <line x1="6" y1="20" x2="6" y2="14"></line>
+            </svg>
+            <span>Analytics</span>
+          </a>
+
+          <a href="/dashboard?tab=items" class="admin-nav-item <%= activeTab === 'items' ? 'active' : '' %>"
+            id="side-link-items" onclick="switchDashboardTab('items'); return false;" title="Item Inventory">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="3" width="7" height="7"></rect>
+              <rect x="14" y="3" width="7" height="7"></rect>
+              <rect x="14" y="14" width="7" height="7"></rect>
+              <rect x="3" y="14" width="7" height="7"></rect>
+            </svg>
+            <span>Item Inventory</span>
+          </a>
+
+          <a href="/dashboard?tab=claims" class="admin-nav-item <%= activeTab === 'claims' ? 'active' : '' %>"
+            id="side-link-claims" onclick="switchDashboardTab('claims'); return false;" title="Claims Verification">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+            </svg>
+            <span>Claims Verification</span>
+          </a>
+
+          <a href="/dashboard?tab=audit" class="admin-nav-item <%= activeTab === 'audit' ? 'active' : '' %>"
+            id="side-link-audit" onclick="switchDashboardTab('audit'); return false;" title="Audit Trail">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              <path d="M9 12l2 2 4-4"></path>
+            </svg>
+            <span>Audit Trail</span>
+          </a>
+
+          <!-- Logout nav item — visible only in collapsed icon-only mode via CSS -->
+          <button type="button" class="admin-nav-item admin-nav-logout-icon" onclick="openLogoutDialog()"
+            title="Sign Out">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+            <span>Sign Out</span>
+          </button>
+        </nav>
+      </div>
+
+      <!-- Sidebar Bottom: Campus Safety Card & User Profile -->
+      <div class="admin-sidebar-bottom">
+        <div class="safety-advisory-card">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#2563EB" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            <path d="M9 12l2 2 4-4"></path>
+          </svg>
+          <div class="safety-card-title">A safer campus, together.</div>
+          <p class="safety-card-text">
+            Keep every item accounted for. Verify identity before release.
+          </p>
+        </div>
+
+        <div class="admin-user-profile-strip">
+          <div class="user-avatar-initials">
+            <%= (user?.fullName || user?.full_name || (role==='admin' ? 'Juan Reyes' : 'Ana Cruz'
+              )).split(' ').map(n => n[0]).slice(0, 2).join('') %>
         </div>
         <div class="user-meta-info">
-          <div class="user-meta-name"><%= user?.fullName || user?.full_name || (role === 'admin' ? 'Juan Reyes' : 'Ana Cruz') %></div>
-          <div class="user-meta-role"><%= role === 'admin' ? 'Campus Admin' : 'Security Officer' %></div>
+          <div class="user-meta-name"><%= user?.fullName || user?.full_name || (role === ' admin' ? 'Juan Reyes'
+              : 'Ana Cruz' ) %>
+          </div>
+          <div class="user-meta-role">
+            <%= role==='admin' ? 'Campus Admin' : 'Security Officer' %>
+          </div>
         </div>
-        <a href="/logout" class="btn-sidebar-logout" title="Sign Out of Session">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <a href="#" onclick="openLogoutDialog(); return false;" class="btn-sidebar-logout" title="Sign Out of Session">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
             <polyline points="16 17 21 12 16 7"></polyline>
             <line x1="21" y1="12" x2="9" y2="12"></line>
           </svg>
         </a>
       </div>
-    </div>
+  </div>
   </aside>
 
   <!-- Main Viewport Content -->
@@ -97,7 +134,8 @@
     <header class="admin-topbar">
       <div style="display: flex; align-items: center; gap: 0.75rem;">
         <!-- Burger toggle for desktop/tablet -->
-        <button class="admin-sidebar-burger-btn" id="admin-sidebar-toggle-btn" onclick="toggleAdminSidebar()" aria-label="Toggle sidebar" title="Toggle sidebar">
+        <button class="admin-sidebar-burger-btn" id="admin-sidebar-toggle-btn" onclick="toggleAdminSidebar()"
+          aria-label="Toggle sidebar" title="Toggle sidebar">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
             <line x1="3" y1="6" x2="21" y2="6"></line>
             <line x1="3" y1="12" x2="21" y2="12"></line>
@@ -109,21 +147,27 @@
             <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
             <path d="M9 12l2 2 4-4"></path>
           </svg>
-          <span><%= role === 'admin' ? 'Admin console' : 'Security desk' %></span>
+          <span>
+            <%= role==='admin' ? 'Admin console' : 'Security desk' %>
+          </span>
           <span class="breadcrumb-separator">/</span>
           <span class="breadcrumb-active" id="topbar-breadcrumb-title">
-            <%= activeTab === 'claims' ? 'Claims Verification' : (activeTab === 'audit' ? 'Audit Trail' : 'Item Inventory') %>
+            <%= activeTab==='claims' ? 'Claims Verification' : (activeTab==='audit' ? 'Audit Trail' : (activeTab==='analytics' ? 'Analytics & Trends' : 'Item Inventory')) %>
           </span>
         </div>
       </div>
 
       <div class="admin-topbar-right">
         <a href="/" class="btn-topbar-public" target="_blank" title="View Public Catalog">
-          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="2" y1="12" x2="22" y2="12"></line>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
           </svg>
           <span class="btn-topbar-public-text">View Public Site</span>
-          <svg class="btn-topbar-public-arrow" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <svg class="btn-topbar-public-arrow" viewBox="0 0 24 24" width="13" height="13" fill="none"
+            stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="7" y1="17" x2="17" y2="7"></line>
             <polyline points="7 7 17 7 17 17"></polyline>
           </svg>
@@ -134,102 +178,170 @@
           <span>Secure session</span>
         </div>
         <div class="admin-date-text">
-          <%= new Date().toLocaleDateString('en-US', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' }) %>
+          <%= new Date().toLocaleDateString('en-US', { weekday: 'short' , day: '2-digit' , month: 'short' ,
+            year: 'numeric' }) %>
         </div>
-        <button type="button" class="btn-topbar-bell" title="System Notifications" aria-label="Notifications">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+        <button type="button" class="btn-topbar-logout" onclick="openLogoutDialog()" title="Sign Out of Session" aria-label="Sign Out">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
           </svg>
-          <span class="bell-badge-dot"></span>
         </button>
       </div>
     </header>
 
     <div class="admin-content-container">
-      <!-- Hero Banner -->
-      <section class="admin-hero-banner">
-        <div class="hero-left">
-          <h1 class="hero-main-title">Every item. A way back.</h1>
-          <p class="hero-subtext">Manage campus inventory, inspect student proof of ownership, and audit chain of custody.</p>
-        </div>
-        <div class="hero-right">
-          <div class="badge-access-pill">
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2">
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-            </svg>
-            <span><%= role.toUpperCase() %> ACCESS</span>
-          </div>
-        </div>
-      </section>
-
-      <!-- Row 1: Summary Cards -->
-      <section class="admin-summary-grid">
-        <!-- Card 1: Active Claims -->
-        <div class="summary-stat-card">
-          <div class="stat-icon-wrap blue">
-            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#2563EB" stroke-width="2">
-              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
-              <polyline points="22,6 12,13 2,6"></polyline>
-            </svg>
-          </div>
-          <div class="stat-body">
-            <div class="stat-header-label">Pending Claims</div>
-            <div class="stat-count-number"><%= claims ? claims.filter(c => c.claim_status === 'pending').length : 0 %></div>
-            <div class="stat-footnote-text">Awaiting officer verification</div>
-          </div>
-        </div>
-
-        <!-- Card 2: Total Items -->
-        <div class="summary-stat-card">
-          <div class="stat-icon-wrap teal">
-            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#0E7490" stroke-width="2">
-              <rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect>
-            </svg>
-          </div>
-          <div class="stat-body">
-            <div class="stat-header-label">Total Logged Items</div>
-            <div class="stat-count-number"><%= items ? items.length : 0 %></div>
-            <div class="stat-footnote-text">In secure safekeeping</div>
-          </div>
-        </div>
-
-        <!-- Card 3: Resolved & Reunited -->
-        <div class="summary-stat-card">
-          <div class="stat-icon-wrap green">
-            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#059669" stroke-width="2">
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-              <polyline points="22 4 12 14.01 9 11.01"></polyline>
-            </svg>
-          </div>
-          <div class="stat-body">
-            <div class="stat-header-label">Reunited & Returned</div>
-            <div class="stat-count-number"><%= claims ? claims.filter(c => c.claim_status === 'accepted').length : 0 %></div>
-            <div class="stat-footnote-text">Successfully claimed by owner</div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Dashboard Navigation Tabs -->
-      <div class="dashboard-tabs">
-        <button type="button" class="tab-btn <%= activeTab === 'items' ? 'active' : '' %>" id="tab-btn-items" onclick="switchDashboardTab('items')">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
-          <span>Item Inventory</span>
-          <span class="tab-counter-badge items-badge"><%= items ? items.length : 0 %></span>
-        </button>
-        <button type="button" class="tab-btn <%= activeTab === 'claims' ? 'active' : '' %>" id="tab-btn-claims" onclick="switchDashboardTab('claims')">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
-          <span>Claims Verification</span>
-          <% const pendingCount = claims ? claims.filter(c => c.claim_status === 'pending').length : 0; %>
-          <span class="tab-counter-badge <%= pendingCount > 0 ? 'claims-badge-alert' : 'claims-badge' %>"><%= pendingCount %></span>
-        </button>
-        <button type="button" class="tab-btn <%= activeTab === 'audit' ? 'active' : '' %>" id="tab-btn-audit" onclick="switchDashboardTab('audit')">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><path d="M9 12l2 2 4-4"></path></svg>
-          <span>Audit Trail</span>
-          <span class="tab-counter-badge audit-badge"><%= typeof auditLogs !== 'undefined' && auditLogs ? auditLogs.length : 0 %></span>
+      <!-- Main Body Top Action Bar (Persistent on all sidebar tabs) -->
+      <div class="admin-main-action-bar">
+        <button type="button" class="btn-hero-add-item" onclick="openNewItemModal()" title="Log New Found Item">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="16"></line>
+            <line x1="8" y1="12" x2="16" y2="12"></line>
+          </svg>
+          <span>Add Found Item</span>
         </button>
       </div>
+
+
+      <!-- Tab: Analytics & Trends View -->
+      <section class="tab-panel <%= activeTab === 'analytics' ? 'active' : 'hidden' %>" id="tab-panel-analytics">
+        <div class="analytics-dashboard-wrap">
+          <!-- Analytics Top Header / Controls -->
+          <div class="analytics-header-bar">
+            <div>
+              <div class="analytics-title-cluster">
+                <h2 class="table-title">Custody & Recovery Analytics</h2>
+                <span class="badge-chip-emerald">Active Real-Time Telemetry</span>
+              </div>
+              <span class="text-xs text-muted">Intake velocity, recovery trends, category distributions, and custody health metrics.</span>
+            </div>
+            <div class="analytics-timeframe-badge">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+              <span>Past 28 Days Trend</span>
+            </div>
+          </div>
+
+          <!-- GA4 Style 2x2 Grid matching reference -->
+          <div class="analytics-ga4-grid">
+            <!-- GA4 Card 1: 28-day Intake Trend (Dual Line Chart) -->
+            <div class="ga4-card">
+              <div class="ga4-card-header">
+                <div class="ga4-card-meta">
+                  <div class="ga4-metric-title">Property Ingestion</div>
+                  <div class="ga4-metric-number" id="analytics-total-intake"><%= items ? items.length : 0 %></div>
+                  <div class="ga4-metric-sub">
+                    <span class="ga4-pill-gain">▲ past 28 days</span>
+                    <span class="ga4-caption-muted">daily turn-ins</span>
+                  </div>
+                </div>
+                <div class="ga4-card-legend">
+                  <span class="legend-dot" style="background: #F97316;"></span>
+                  <span class="legend-text">Logged Items</span>
+                  <span class="legend-dot" style="background: #0284C7; margin-left: 0.5rem;"></span>
+                  <span class="legend-text">Reunited Claims</span>
+                </div>
+              </div>
+              <div class="ga4-chart-container">
+                <canvas id="analyticsTrendChart"></canvas>
+              </div>
+            </div>
+
+            <!-- GA4 Card 2: Category Breakdown (Bar Chart) -->
+            <div class="ga4-card">
+              <div class="ga4-card-header">
+                <div class="ga4-card-meta">
+                  <div class="ga4-metric-title">Intake by Asset Category</div>
+                  <div class="ga4-metric-number" id="analytics-top-category">-</div>
+                  <div class="ga4-metric-sub">
+                    <span class="ga4-caption-muted">Volume distribution</span>
+                  </div>
+                </div>
+                <div class="ga4-card-legend">
+                  <span class="legend-dot" style="background: #F59E0B;"></span>
+                  <span class="legend-text">Items</span>
+                </div>
+              </div>
+              <div class="ga4-chart-container">
+                <canvas id="analyticsCategoryChart"></canvas>
+              </div>
+            </div>
+
+            <!-- GA4 Card 3: Recovery Rate & Retention Dynamics -->
+            <div class="ga4-card">
+              <div class="ga4-card-header">
+                <div class="ga4-card-meta">
+                  <div class="ga4-metric-title">Reunification & Claim Rate</div>
+                  <% 
+                    const claimedCount = claims ? claims.filter(c => c.claim_status === 'accepted').length : 0;
+                    const totalCount = items ? items.length : 0;
+                    const recoveryRate = totalCount > 0 ? Math.round((claimedCount / totalCount) * 100) : 0;
+                  %>
+                  <div class="ga4-metric-number"><%= recoveryRate %>%</div>
+                  <div class="ga4-metric-sub">
+                    <span class="ga4-pill-gain">▲ <%= claimedCount %> resolved</span>
+                    <span class="ga4-caption-muted">custody release success</span>
+                  </div>
+                </div>
+                <div class="ga4-card-legend">
+                  <span class="legend-dot" style="background: #10B981;"></span>
+                  <span class="legend-text">Cumulative Returns</span>
+                </div>
+              </div>
+              <div class="ga4-chart-container">
+                <canvas id="analyticsDynamicsChart"></canvas>
+              </div>
+            </div>
+
+            <!-- GA4 Card 4: Campus Location Hotspots (Horizontal Bar) -->
+            <div class="ga4-card">
+              <div class="ga4-card-header">
+                <div class="ga4-card-meta">
+                  <div class="ga4-metric-title">Top Campus Found Locations</div>
+                  <div class="ga4-metric-number" id="analytics-top-location">-</div>
+                  <div class="ga4-metric-sub">
+                    <span class="ga4-caption-muted">Incident hotspots</span>
+                  </div>
+                </div>
+                <div class="ga4-card-legend">
+                  <span class="legend-dot" style="background: #6366F1;"></span>
+                  <span class="legend-text">Location Frequency</span>
+                </div>
+              </div>
+              <div class="ga4-chart-container">
+                <canvas id="analyticsLocationChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Raw Analytics Telemetry Data for JS Charts -->
+      <script id="analytics-data" type="application/json">
+        <%- JSON.stringify({
+          items: (items || []).map(i => ({
+            id: i.item_id,
+            title: i.title,
+            category: i.category_name,
+            location: i.location_name,
+            status: i.item_status,
+            created_at: i.created_at || i.found_at
+          })),
+          claims: (claims || []).map(c => ({
+            id: c.claim_id,
+            status: c.claim_status,
+            created_at: c.created_at
+          })),
+          categories: categories || [],
+          locations: locations || []
+        }) %>
+      </script>
 
       <!-- Tab 1: Items Management View -->
       <section class="tab-panel <%= activeTab === 'items' ? 'active' : 'hidden' %>" id="tab-panel-items">
@@ -238,45 +350,89 @@
             <div>
               <div class="flex items-center gap-2">
                 <h2 class="table-title">Reported Property Log</h2>
-                <span class="table-results-counter" id="inventory-results-counter">Showing <%= items ? items.length : 0 %> items</span>
+                <span class="table-results-counter" id="inventory-results-counter">Showing <%= items ? items.length : 0
+                    %> items</span>
               </div>
               <span class="text-xs text-muted">Complete ledger of reported found assets and storage tracking.</span>
             </div>
 
             <div class="table-actions-cluster">
-              <div class="table-search-input-wrap">
-                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                <input type="text" id="staff-item-search" class="admin-search-field" placeholder="Search title, ID, finder, serial number..." oninput="runStaffInventoryFilter()">
+              <div class="search-and-filter-bar">
+                <div class="table-search-input-wrap">
+                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                  </svg>
+                  <input type="text" id="staff-item-search" class="admin-search-field"
+                    placeholder="Search title, ID, finder, serial number..." oninput="runStaffInventoryFilter()">
+                  <button type="button" class="btn-clear-search hidden" id="inv-clear-search-btn" onclick="clearInventorySearch()" aria-label="Clear search">✕</button>
+                </div>
+
+                <!-- Mobile Filter Trigger Button -->
+                <button type="button" class="btn-filter-trigger" id="inv-filter-sheet-trigger" onclick="openInventoryFilterSheet()" aria-label="Open filter options" title="Open filter menu">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="4" y1="21" x2="4" y2="14"></line>
+                    <line x1="4" y1="10" x2="4" y2="3"></line>
+                    <line x1="12" y1="21" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12" y2="3"></line>
+                    <line x1="20" y1="21" x2="20" y2="16"></line>
+                    <line x1="20" y1="12" x2="20" y2="3"></line>
+                    <line x1="1" y1="14" x2="7" y2="14"></line>
+                    <line x1="9" y1="8" x2="15" y2="8"></line>
+                    <line x1="17" y1="16" x2="23" y2="16"></line>
+                  </svg>
+                  <span class="btn-filter-trigger-text">Filters</span>
+                  <span class="filter-count-badge hidden" id="inv-filter-badge">0</span>
+                </button>
               </div>
 
-              <div class="custom-filter-dropdown-wrap">
-                <select id="staff-item-category-filter" class="admin-filter-select" onchange="runStaffInventoryFilter()">
-                  <option value="all">All Categories</option>
-                  <% if (typeof categories !== 'undefined' && categories.length > 0) { %>
-                    <% categories.forEach(cat => { %>
-                      <option value="<%= cat.category_name.toLowerCase() %>"><%= cat.category_name %></option>
-                    <% }) %>
-                  <% } %>
-                </select>
-                <svg class="select-chevron-sm" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
-              </div>
+              <!-- Desktop Filter Controls (Hidden on Mobile) -->
+              <div class="desktop-filter-controls">
+                <div class="custom-filter-dropdown-wrap">
+                  <select id="staff-item-category-filter" class="admin-filter-select"
+                    onchange="runStaffInventoryFilter()">
+                    <option value="all">All Categories</option>
+                    <% if (typeof categories !=='undefined' && categories.length> 0) { %>
+                      <% categories.forEach(cat=> { %>
+                        <option value="<%= cat.category_name.toLowerCase() %>">
+                          <%= cat.category_name %>
+                        </option>
+                        <% }) %>
+                      <% } %>
+                  </select>
+                  <svg class="select-chevron-sm" viewBox="0 0 24 24" width="14" height="14" fill="none"
+                    stroke="currentColor" stroke-width="2">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </div>
 
-              <div class="custom-filter-dropdown-wrap">
-                <select id="staff-item-status-filter" class="admin-filter-select" onchange="runStaffInventoryFilter()">
-                  <option value="all">All Statuses</option>
-                  <option value="stored">Stored</option>
-                  <option value="processing">Processing</option>
-                  <option value="claimed">Claimed</option>
-                </select>
-                <svg class="select-chevron-sm" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
-              </div>
+                <div class="custom-filter-dropdown-wrap">
+                  <select id="staff-item-status-filter" class="admin-filter-select" onchange="runStaffInventoryFilter()">
+                    <option value="all">All Statuses</option>
+                    <option value="stored">Stored</option>
+                    <option value="processing">Processing</option>
+                    <option value="claimed">Claimed</option>
+                  </select>
+                  <svg class="select-chevron-sm" viewBox="0 0 24 24" width="14" height="14" fill="none"
+                    stroke="currentColor" stroke-width="2">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
+                </div>
 
-              <button type="button" class="btn-reset-filters" onclick="resetStaffInventoryFilters()" title="Reset all filters">
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
-                <span>Reset</span>
-              </button>
+                <button type="button" class="btn-reset-filters" onclick="resetStaffInventoryFilters()"
+                  title="Reset all filters">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                    <path d="M3 3v5h5"></path>
+                  </svg>
+                  <span>Reset</span>
+                </button>
+              </div>
             </div>
           </div>
+
+          <!-- Active Filter Chips Tag Row (Image 1 style) -->
+          <div class="active-filter-chips-row hidden" id="inventory-active-chips" aria-label="Active inventory filters"></div>
 
           <div class="table-responsive">
             <table class="data-table" id="staff-items-table">
@@ -293,117 +449,128 @@
                 </tr>
               </thead>
               <tbody>
-                <% if (items && items.length > 0) { %>
-                  <% items.forEach(item => { %>
-                    <% 
-                      const isProcessing = item.storage_notes && item.storage_notes.toLowerCase().includes('processing');
-                      const isClaimed = item.item_status === 'inactive' || (item.storage_notes && item.storage_notes.toLowerCase().includes('claimed'));
-                      const isStored = item.storage_notes && item.storage_notes.toLowerCase().includes('stored');
-                      
-                      let statusKey = 'active';
-                      let statusText = 'Active';
-                      if (isClaimed) {
-                        statusKey = 'claimed';
-                        statusText = 'Claimed';
-                      } else if (isProcessing) {
-                        statusKey = 'processing';
-                        statusText = 'Processing';
-                      } else if (isStored) {
-                        statusKey = 'stored';
-                        statusText = 'Stored';
-                      } else {
-                        statusKey = 'active';
-                        statusText = 'Active';
-                      }
-                      const rowStatus = statusKey;
-                    %>
-                    <tr 
-                      id="row-item-<%= item.item_id %>" 
-                      data-id="<%= item.item_id %>"
-                      data-title="<%= item.title.toLowerCase() %>" 
-                      data-category="<%= item.category_name ? item.category_name.toLowerCase() : '' %>"
-                      data-status="<%= rowStatus %>"
-                      data-serial="<%= (item.serial_number || '').toLowerCase() %>"
-                      data-finder="<%= (item.finder_name || '').toLowerCase() %>"
-                    >
-                      <td class="font-mono text-xs font-semibold" style="color: #475569;">#FI-<%= String(item.item_id).padStart(4, '0') %></td>
-                      <td>
-                        <div class="table-item-cell">
-                          <div class="table-thumb-box <%= item.image_url ? 'has-image' : '' %>"
-                            <% if (item.image_url) { %>
+                <% if (items && items.length> 0) { %>
+                  <% items.forEach(item=> { %>
+                    <% const isProcessing=item.storage_notes && item.storage_notes.toLowerCase().includes('processing');
+                      const isClaimed=item.item_status==='inactive' || (item.storage_notes &&
+                      item.storage_notes.toLowerCase().includes('claimed')); const isStored=item.storage_notes &&
+                      item.storage_notes.toLowerCase().includes('stored'); let statusKey='active' ; let
+                      statusText='Active' ; if (isClaimed) { statusKey='claimed' ; statusText='Claimed' ; } else if
+                      (isProcessing) { statusKey='processing' ; statusText='Processing' ; } else if (isStored) {
+                      statusKey='stored' ; statusText='Stored' ; } else { statusKey='active' ; statusText='Active' ; }
+                      const rowStatus=statusKey; %>
+                      <tr id="row-item-<%= item.item_id %>" data-id="<%= item.item_id %>"
+                        data-title="<%= item.title.toLowerCase() %>"
+                        data-category="<%= item.category_name ? item.category_name.toLowerCase() : '' %>"
+                        data-status="<%= rowStatus %>" data-serial="<%= (item.serial_number || '').toLowerCase() %>"
+                        data-finder="<%= (item.finder_name || '').toLowerCase() %>">
+                        <td class="font-mono text-xs font-semibold" style="color: #475569;">#FI-<%=
+                            String(item.item_id).padStart(4, '0' ) %>
+                        </td>
+                        <td>
+                          <div class="table-item-cell">
+                            <div class="table-thumb-box <%= item.image_url ? 'has-image' : '' %>" <% if (item.image_url)
+                              { %>
                               data-img="<%= item.image_url %>"
-                              data-title="<%= item.title %>"
-                              data-ref="#FI-<%= String(item.item_id).padStart(4, '0') %>"
-                              onclick="openThumbPreview(this)"
-                              role="button"
-                              tabindex="0"
-                              onkeydown="if(event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openThumbPreview(this); }"
-                              title="Click to preview photograph"
-                            <% } %>
-                          >
-                            <% if (item.image_url) { %>
-                              <img src="<%= item.image_url %>" alt="<%= item.title %>" class="table-thumb" loading="lazy" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                              <div class="table-thumb-fallback" style="display: none;">
-                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8">
-                                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                                  <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                                  <polyline points="21 15 16 10 5 21"></polyline>
-                                </svg>
-                              </div>
-                            <% } else { %>
-                              <div class="table-thumb-fallback" title="No photograph available">
-                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8">
-                                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                                  <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                                  <polyline points="21 15 16 10 5 21"></polyline>
-                                </svg>
-                              </div>
-                            <% } %>
+                                data-title="<%= item.title %>"
+                                  data-ref="#FI-<%= String(item.item_id).padStart(4, '0' ) %>"
+                                    onclick="openThumbPreview(this)"
+                                    role="button"
+                                    tabindex="0"
+                                    onkeydown="if(event.key === 'Enter' || event.key === ' ') { event.preventDefault();
+                                    openThumbPreview(this); }"
+                                    title="Click to preview photograph"
+                                    <% } %>
+                                      >
+                                      <% if (item.image_url) { %>
+                                        <img src="<%= item.image_url %>" alt="<%= item.title %>" class="table-thumb"
+                                          loading="lazy"
+                                          onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                        <div class="table-thumb-fallback" style="display: none;">
+                                          <svg viewBox="0 0 24 24" width="18" height="18" fill="none"
+                                            stroke="currentColor" stroke-width="1.8">
+                                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                                            <polyline points="21 15 16 10 5 21"></polyline>
+                                          </svg>
+                                        </div>
+                                        <% } else { %>
+                                          <div class="table-thumb-fallback" title="No photograph available">
+                                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none"
+                                              stroke="currentColor" stroke-width="1.8">
+                                              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                              <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                                              <polyline points="21 15 16 10 5 21"></polyline>
+                                            </svg>
+                                          </div>
+                                          <% } %>
+                            </div>
+                            <div class="table-item-meta">
+                              <span class="table-item-title">
+                                <%= item.title %>
+                              </span>
+                              <% if (item.serial_number) { %>
+                                <div class="table-item-serial">SN: <%= item.serial_number %>
+                                </div>
+                                <% } %>
+                            </div>
                           </div>
-                          <div class="table-item-meta">
-                            <span class="table-item-title"><%= item.title %></span>
-                            <% if (item.serial_number) { %>
-                              <div class="table-item-serial">SN: <%= item.serial_number %></div>
-                            <% } %>
+                        </td>
+                        <td><span class="category-chip sm">
+                            <%= item.category_name || '#' + item.category_id %>
+                          </span></td>
+                        <td class="text-sm" style="color: #475569;">
+                          <%= item.location_name || '#' + item.location_id %>
+                        </td>
+                        <td class="text-sm" style="color: #64748B;">
+                          <%= new Date(item.found_at).toLocaleDateString('en-US', { day: '2-digit' , month: 'short' ,
+                            year: 'numeric' }) %>
+                        </td>
+                        <td>
+                          <span class="status-pill-subtle <%= statusKey %>">
+                            <%= statusText %>
+                          </span>
+                        </td>
+                        <td class="text-sm text-muted">
+                          <%= item.finder_name %>
+                        </td>
+                        <td class="text-right">
+                          <div class="table-actions-group">
+                            <button type="button" class="btn-action-edit"
+                              onclick="openEditItemModal(<%= JSON.stringify(item) %>)" title="Edit Item Details">
+                              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor"
+                                stroke-width="2.2">
+                                <path d="M12 20h9"></path>
+                                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                              </svg>
+                              <span>Edit</span>
+                            </button>
                           </div>
-                        </div>
-                      </td>
-                      <td><span class="category-chip sm"><%= item.category_name || '#' + item.category_id %></span></td>
-                      <td class="text-sm" style="color: #475569;"><%= item.location_name || '#' + item.location_id %></td>
-                      <td class="text-sm" style="color: #64748B;"><%= new Date(item.found_at).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }) %></td>
-                      <td>
-                        <span class="status-pill-subtle <%= statusKey %>"><%= statusText %></span>
-                      </td>
-                      <td class="text-sm text-muted"><%= item.finder_name %></td>
-                      <td class="text-right">
-                        <div class="table-actions-group">
-                          <button 
-                            type="button" 
-                            class="btn-action-edit" 
-                            onclick="openEditItemModal(<%= JSON.stringify(item) %>)"
-                            title="Edit Item Details"
-                          >
-                            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
-                            <span>Edit</span>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  <% }) %>
-                <% } else { %>
-                  <tr>
-                    <td colspan="8" class="text-center py-8 text-muted">No items recorded in inventory yet.</td>
-                  </tr>
-                <% } %>
-                <tr id="inventory-no-results-row" style="display: none;">
-                  <td colspan="8" class="text-center py-8 text-muted">
-                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; padding: 1.5rem 0;">
-                      <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="#94A3B8" stroke-width="1.8"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                      <span style="font-weight: 500; color: #475569;">No items match your search or filter criteria.</span>
-                      <button type="button" class="btn btn-sm btn-ghost" onclick="resetStaffInventoryFilters()" style="margin-top: 0.25rem;">Clear Filters</button>
-                    </div>
-                  </td>
-                </tr>
+                        </td>
+                      </tr>
+                      <% }) %>
+                        <% } else { %>
+                          <tr>
+                            <td colspan="8" class="text-center py-8 text-muted">No items recorded in inventory yet.</td>
+                          </tr>
+                          <% } %>
+                            <tr id="inventory-no-results-row" style="display: none;">
+                              <td colspan="8" class="text-center py-8 text-muted">
+                                <div
+                                  style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; padding: 1.5rem 0;">
+                                  <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="#94A3B8"
+                                    stroke-width="1.8">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                  </svg>
+                                  <span style="font-weight: 500; color: #475569;">No items match your search or filter
+                                    criteria.</span>
+                                  <button type="button" class="btn btn-sm btn-ghost"
+                                    onclick="resetStaffInventoryFilters()" style="margin-top: 0.25rem;">Clear
+                                    Filters</button>
+                                </div>
+                              </td>
+                            </tr>
               </tbody>
             </table>
           </div>
@@ -411,33 +578,45 @@
           <!-- Item Inventory Pagination Footer -->
           <div class="table-pagination-footer" id="inventory-pagination-footer">
             <div class="pagination-info" id="inventory-pagination-info">
-              Showing <span id="inv-page-start">1</span>–<span id="inv-page-end">5</span> of <span id="inv-page-total"><%= items ? items.length : 0 %></span> items
+              Showing <span id="inv-page-start">1</span>–<span id="inv-page-end">5</span> of <span id="inv-page-total">
+                <%= items ? items.length : 0 %>
+              </span> items
             </div>
 
             <div class="pagination-actions">
               <div class="pagination-page-size-wrap">
                 <label for="inventory-page-size" class="text-xs text-muted">Per page:</label>
                 <div class="custom-filter-dropdown-wrap" style="width: auto;">
-                  <select id="inventory-page-size" class="admin-page-size-select" onchange="changeInventoryPageSize(this.value)">
+                  <select id="inventory-page-size" class="admin-page-size-select"
+                    onchange="changeInventoryPageSize(this.value)">
                     <option value="5" selected>5</option>
                     <option value="10">10</option>
                     <option value="20">20</option>
                   </select>
-                  <svg class="select-chevron-sm" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                  <svg class="select-chevron-sm" viewBox="0 0 24 24" width="12" height="12" fill="none"
+                    stroke="currentColor" stroke-width="2">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
                 </div>
               </div>
 
               <div class="pagination-nav-group" id="inventory-pagination-nav">
-                <button type="button" class="pagination-nav-btn prev" id="inv-btn-prev" onclick="goToInventoryPage(invCurrentPage - 1)" title="Previous page">
-                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                <button type="button" class="pagination-nav-btn prev" id="inv-btn-prev"
+                  onclick="goToInventoryPage(invCurrentPage - 1)" title="Previous page">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                  </svg>
                   <span>Prev</span>
                 </button>
                 <div class="pagination-page-numbers" id="inventory-page-numbers">
                   <!-- Generated via JS -->
                 </div>
-                <button type="button" class="pagination-nav-btn next" id="inv-btn-next" onclick="goToInventoryPage(invCurrentPage + 1)" title="Next page">
+                <button type="button" class="pagination-nav-btn next" id="inv-btn-next"
+                  onclick="goToInventoryPage(invCurrentPage + 1)" title="Next page">
                   <span>Next</span>
-                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                  </svg>
                 </button>
               </div>
             </div>
@@ -452,43 +631,88 @@
             <div>
               <div class="flex items-center gap-2">
                 <h2 class="table-title">Incoming Recovery Claims</h2>
-                <% 
-                  const tabPendingCount = (claims || []).filter(c => c.claim_status === 'pending').length;
+                <% const tabPendingCount=(claims || []).filter(c=> c.claim_status === 'pending').length;
                   const tabAcceptedCount = (claims || []).filter(c => c.claim_status === 'accepted').length;
                   const tabRejectedCount = (claims || []).filter(c => c.claim_status === 'rejected').length;
-                %>
-                <span class="table-results-counter" id="claims-results-counter"><%= tabPendingCount %> Pending Verification</span>
+                  %>
+                  <span class="table-results-counter" id="claims-results-counter">
+                    <%= tabPendingCount %> Pending Verification
+                  </span>
               </div>
-              <span class="text-xs text-muted">Verify claimant identity, inspect proof of ownership, and record release approvals.</span>
+              <span class="text-xs text-muted">Verify claimant identity, inspect proof of ownership, and record release
+                approvals.</span>
             </div>
 
             <div class="table-actions-cluster">
-              <div class="table-search-input-wrap">
-                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                <input type="text" id="staff-claim-search" class="admin-search-field" placeholder="Search claimant, claim ID, item ref..." oninput="claimsCurrentPage=1; filterStaffClaims()">
+              <div class="search-and-filter-bar">
+                <div class="table-search-input-wrap">
+                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                  </svg>
+                  <input type="text" id="staff-claim-search" class="admin-search-field"
+                    placeholder="Search claimant, claim ID, item ref..."
+                    oninput="claimsCurrentPage=1; filterStaffClaims()">
+                  <button type="button" class="btn-clear-search hidden" id="claim-clear-search-btn" onclick="clearClaimsSearch()" aria-label="Clear search">✕</button>
+                </div>
+
+                <!-- Mobile Filter Trigger Button for Claims -->
+                <button type="button" class="btn-filter-trigger" id="claim-filter-sheet-trigger" onclick="openClaimsFilterSheet()" aria-label="Open claim filter options" title="Open filter menu">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="4" y1="21" x2="4" y2="14"></line>
+                    <line x1="4" y1="10" x2="4" y2="3"></line>
+                    <line x1="12" y1="21" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12" y2="3"></line>
+                    <line x1="20" y1="21" x2="20" y2="16"></line>
+                    <line x1="20" y1="12" x2="20" y2="3"></line>
+                    <line x1="1" y1="14" x2="7" y2="14"></line>
+                    <line x1="9" y1="8" x2="15" y2="8"></line>
+                    <line x1="17" y1="16" x2="23" y2="16"></line>
+                  </svg>
+                  <span class="btn-filter-trigger-text">Filters</span>
+                  <span class="filter-count-badge hidden" id="claim-filter-badge">0</span>
+                </button>
               </div>
 
-              <div class="filter-pill-selector" role="tablist" aria-label="Filter claims by status">
-                <button type="button" class="filter-pill-btn active" data-filter="all" onclick="setClaimFilter('all', this)">
-                  <span>All</span>
-                  <span class="pill-count" id="count-claim-all"><%= claims ? claims.length : 0 %></span>
-                </button>
-                <button type="button" class="filter-pill-btn" data-filter="pending" onclick="setClaimFilter('pending', this)">
-                  <span class="pulse-dot-amber"></span>
-                  <span>Pending</span>
-                  <span class="pill-count" id="count-claim-pending"><%= tabPendingCount %></span>
-                </button>
-                <button type="button" class="filter-pill-btn" data-filter="accepted" onclick="setClaimFilter('accepted', this)">
-                  <span>Approved</span>
-                  <span class="pill-count" id="count-claim-accepted"><%= tabAcceptedCount %></span>
-                </button>
-                <button type="button" class="filter-pill-btn" data-filter="rejected" onclick="setClaimFilter('rejected', this)">
-                  <span>Rejected</span>
-                  <span class="pill-count" id="count-claim-rejected"><%= tabRejectedCount %></span>
-                </button>
+              <!-- Desktop Filter Pill Controls (Hidden on Mobile) -->
+              <div class="desktop-filter-controls">
+                <div class="filter-pill-selector" role="tablist" aria-label="Filter claims by status">
+                  <button type="button" class="filter-pill-btn active" data-filter="all"
+                    onclick="setClaimFilter('all', this)">
+                    <span>All</span>
+                    <span class="pill-count" id="count-claim-all">
+                      <%= claims ? claims.length : 0 %>
+                    </span>
+                  </button>
+                  <button type="button" class="filter-pill-btn" data-filter="pending"
+                    onclick="setClaimFilter('pending', this)">
+                    <span class="pulse-dot-amber"></span>
+                    <span>Pending</span>
+                    <span class="pill-count" id="count-claim-pending">
+                      <%= tabPendingCount %>
+                    </span>
+                  </button>
+                  <button type="button" class="filter-pill-btn" data-filter="accepted"
+                    onclick="setClaimFilter('accepted', this)">
+                    <span>Approved</span>
+                    <span class="pill-count" id="count-claim-accepted">
+                      <%= tabAcceptedCount %>
+                    </span>
+                  </button>
+                  <button type="button" class="filter-pill-btn" data-filter="rejected"
+                    onclick="setClaimFilter('rejected', this)">
+                    <span>Rejected</span>
+                    <span class="pill-count" id="count-claim-rejected">
+                      <%= tabRejectedCount %>
+                    </span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
+
+          <!-- Active Filter Chips Tag Row for Claims -->
+          <div class="active-filter-chips-row hidden" id="claims-active-chips" aria-label="Active claim filters"></div>
 
           <div class="table-responsive">
             <table class="data-table" id="staff-claims-table">
@@ -504,86 +728,120 @@
                 </tr>
               </thead>
               <tbody>
-                <% if (claims && claims.length > 0) { %>
-                  <% claims.forEach(claim => { %>
-                    <tr 
-                      id="row-claim-<%= claim.claim_id %>" 
-                      data-id="<%= claim.claim_id %>"
+                <% if (claims && claims.length> 0) { %>
+                  <% claims.forEach(claim=> { %>
+                    <tr id="row-claim-<%= claim.claim_id %>" data-id="<%= claim.claim_id %>"
                       data-status="<%= claim.claim_status %>"
                       data-claimant="<%= (claim.claimant_name || '').toLowerCase() %>"
                       data-item="<%= (claim.item_title || '').toLowerCase() %>"
                       data-ref="fi-<%= String(claim.item_id).padStart(4, '0') %>"
-                      data-clm="clm-<%= String(claim.claim_id).padStart(4, '0') %>"
-                    >
-                      <td class="font-mono text-xs">#CLM-<%= String(claim.claim_id).padStart(4, '0') %></td>
-                      <td>
-                        <span style="display: block; font-weight: 600; color: #0F172A;"><%= claim.item_title || 'Item #' + claim.item_id %></span>
-                        <span class="text-xs font-mono text-muted">Ref: FI-<%= String(claim.item_id).padStart(4, '0') %></span>
+                      data-clm="clm-<%= String(claim.claim_id).padStart(4, '0') %>">
+                      <td class="font-mono text-xs">#CLM-<%= String(claim.claim_id).padStart(4, '0' ) %>
                       </td>
-                      <td style="font-weight: 600; color: #1E293B;"><%= claim.claimant_name %></td>
+                      <td>
+                        <span style="display: block; font-weight: 600; color: #0F172A;">
+                          <%= claim.item_title || 'Item #' + claim.item_id %>
+                        </span>
+                        <span class="text-xs font-mono text-muted">Ref: FI-<%= String(claim.item_id).padStart(4, '0' )
+                            %></span>
+                      </td>
+                      <td style="font-weight: 600; color: #1E293B;">
+                        <%= claim.claimant_name %>
+                      </td>
                       <td class="text-sm">
                         <% if (claim.claimant_email) { %>
                           <div class="flex items-center gap-1 text-muted" style="margin-bottom: 2px;">
-                            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
-                            <span><%= claim.claimant_email %></span>
+                            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor"
+                              stroke-width="2">
+                              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z">
+                              </path>
+                              <polyline points="22,6 12,13 2,6"></polyline>
+                            </svg>
+                            <span>
+                              <%= claim.claimant_email %>
+                            </span>
                           </div>
-                        <% } %>
-                        <% if (claim.claimant_phone) { %>
-                          <div class="flex items-center gap-1 text-muted">
-                            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-                            <span><%= claim.claimant_phone %></span>
-                          </div>
-                        <% } %>
+                          <% } %>
+                            <% if (claim.claimant_phone) { %>
+                              <div class="flex items-center gap-1 text-muted">
+                                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor"
+                                  stroke-width="2">
+                                  <path
+                                    d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z">
+                                  </path>
+                                </svg>
+                                <span>
+                                  <%= claim.claimant_phone %>
+                                </span>
+                              </div>
+                              <% } %>
                       </td>
-                      <td class="text-sm" style="color: #64748B;"><%= new Date(claim.created_at).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }) %></td>
+                      <td class="text-sm" style="color: #64748B;">
+                        <%= new Date(claim.created_at).toLocaleDateString('en-US', { day: '2-digit' , month: 'short' ,
+                          year: 'numeric' }) %>
+                      </td>
                       <td>
-                        <% if (claim.claim_status === 'pending') { %>
+                        <% if (claim.claim_status==='pending' ) { %>
                           <span class="status-pill-subtle pending-verification">
                             <span class="pulse-dot-amber"></span>
                             <span>Pending Verification</span>
                           </span>
-                        <% } else if (claim.claim_status === 'accepted') { %>
-                          <span class="status-pill-subtle accepted-claim">
-                            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                            <span>Approved</span>
-                          </span>
-                        <% } else if (claim.claim_status === 'rejected') { %>
-                          <span class="status-pill-subtle rejected-claim">
-                            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                            <span>Rejected</span>
-                          </span>
-                        <% } else { %>
-                          <span class="status-badge status-<%= claim.claim_status %>">
-                            <%= claim.claim_status.toUpperCase() %>
-                          </span>
-                        <% } %>
+                          <% } else if (claim.claim_status==='accepted' ) { %>
+                            <span class="status-pill-subtle accepted-claim">
+                              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor"
+                                stroke-width="2.5">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                              </svg>
+                              <span>Approved</span>
+                            </span>
+                            <% } else if (claim.claim_status==='rejected' ) { %>
+                              <span class="status-pill-subtle rejected-claim">
+                                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor"
+                                  stroke-width="2.5">
+                                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                                </svg>
+                                <span>Rejected</span>
+                              </span>
+                              <% } else { %>
+                                <span class="status-badge status-<%= claim.claim_status %>">
+                                  <%= claim.claim_status.toUpperCase() %>
+                                </span>
+                                <% } %>
                       </td>
                       <td class="text-right">
-                        <button 
-                          type="button" 
-                          class="btn-inspect-view" 
+                        <button type="button" class="btn-inspect-view"
                           onclick="openReviewClaimModal(<%= JSON.stringify(claim) %>)"
-                          title="Inspect proof of ownership and claimant credentials"
-                        >
-                          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                          title="Inspect proof of ownership and claimant credentials">
+                          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                          </svg>
                           <span>Inspect & View</span>
                         </button>
                       </td>
                     </tr>
-                  <% }) %>
-                <% } else { %>
-                  <tr>
-                    <td colspan="7" class="text-center py-8 text-muted">No claims received yet.</td>
-                  </tr>
-                <% } %>
-                <tr id="claims-no-results-row" style="display: none;">
-                  <td colspan="7" class="text-center py-8 text-muted">
-                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; padding: 1.5rem 0;">
-                      <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="#94A3B8" stroke-width="1.8"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                      <span style="font-weight: 500; color: #475569;">No claims match your search or filter criteria.</span>
-                    </div>
-                  </td>
-                </tr>
+                    <% }) %>
+                      <% } else { %>
+                        <tr>
+                          <td colspan="7" class="text-center py-8 text-muted">No claims received yet.</td>
+                        </tr>
+                        <% } %>
+                          <tr id="claims-no-results-row" style="display: none;">
+                            <td colspan="7" class="text-center py-8 text-muted">
+                              <div
+                                style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; padding: 1.5rem 0;">
+                                <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="#94A3B8"
+                                  stroke-width="1.8">
+                                  <circle cx="11" cy="11" r="8"></circle>
+                                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                </svg>
+                                <span style="font-weight: 500; color: #475569;">No claims match your search or filter
+                                  criteria.</span>
+                              </div>
+                            </td>
+                          </tr>
               </tbody>
             </table>
           </div>
@@ -591,33 +849,46 @@
           <!-- Claims Pagination Footer -->
           <div class="table-pagination-footer" id="claims-pagination-footer">
             <div class="pagination-info" id="claims-pagination-info">
-              Showing <span id="claims-page-start">1</span>–<span id="claims-page-end">5</span> of <span id="claims-page-total"><%= claims ? claims.length : 0 %></span> claims
+              Showing <span id="claims-page-start">1</span>–<span id="claims-page-end">5</span> of <span
+                id="claims-page-total">
+                <%= claims ? claims.length : 0 %>
+              </span> claims
             </div>
 
             <div class="pagination-actions">
               <div class="pagination-page-size-wrap">
                 <label for="claims-page-size" class="text-xs text-muted">Per page:</label>
                 <div class="custom-filter-dropdown-wrap" style="width: auto;">
-                  <select id="claims-page-size" class="admin-page-size-select" onchange="changeClaimsPageSize(this.value)">
+                  <select id="claims-page-size" class="admin-page-size-select"
+                    onchange="changeClaimsPageSize(this.value)">
                     <option value="5" selected>5</option>
                     <option value="10">10</option>
                     <option value="20">20</option>
                   </select>
-                  <svg class="select-chevron-sm" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                  <svg class="select-chevron-sm" viewBox="0 0 24 24" width="12" height="12" fill="none"
+                    stroke="currentColor" stroke-width="2">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
                 </div>
               </div>
 
               <div class="pagination-nav-group" id="claims-pagination-nav">
-                <button type="button" class="pagination-nav-btn prev" id="claims-btn-prev" onclick="goToClaimsPage(claimsCurrentPage - 1)" title="Previous page">
-                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                <button type="button" class="pagination-nav-btn prev" id="claims-btn-prev"
+                  onclick="goToClaimsPage(claimsCurrentPage - 1)" title="Previous page">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                  </svg>
                   <span>Prev</span>
                 </button>
                 <div class="pagination-page-numbers" id="claims-page-numbers">
                   <!-- Generated via JS -->
                 </div>
-                <button type="button" class="pagination-nav-btn next" id="claims-btn-next" onclick="goToClaimsPage(claimsCurrentPage + 1)" title="Next page">
+                <button type="button" class="pagination-nav-btn next" id="claims-btn-next"
+                  onclick="goToClaimsPage(claimsCurrentPage + 1)" title="Next page">
                   <span>Next</span>
-                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                  </svg>
                 </button>
               </div>
             </div>
@@ -631,12 +902,18 @@
           <div class="table-header-bar">
             <div>
               <h2 class="table-title">System Transactional Audit Trail</h2>
-              <span class="text-xs text-muted">Immutable, append-only security logs for chain of custody and staff verification.</span>
+              <span class="text-xs text-muted">Immutable, append-only security logs for chain of custody and staff
+                verification.</span>
             </div>
             <div class="table-actions-cluster">
               <div class="table-search-input-wrap">
-                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                <input type="text" id="staff-audit-search" class="admin-search-field" placeholder="Filter audit trail by action, actor, entity..." oninput="auditCurrentPage=1; filterStaffAuditLogs(this.value)">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input type="text" id="staff-audit-search" class="admin-search-field"
+                  placeholder="Filter audit trail by action, actor, entity..."
+                  oninput="auditCurrentPage=1; filterStaffAuditLogs(this.value)">
               </div>
             </div>
           </div>
@@ -654,51 +931,71 @@
                 </tr>
               </thead>
               <tbody>
-                <% if (typeof auditLogs !== 'undefined' && auditLogs && auditLogs.length > 0) { %>
-                  <% auditLogs.forEach(log => { %>
-                    <tr id="row-audit-<%= log.id %>" data-action="<%= (log.action || '').toLowerCase() %>" data-actor="<%= (log.actor_name || '').toLowerCase() %>">
-                      <td class="font-mono text-xs">#LOG-<%= String(log.id).padStart(4, '0') %></td>
+                <% if (typeof auditLogs !=='undefined' && auditLogs && auditLogs.length> 0) { %>
+                  <% auditLogs.forEach(log=> { %>
+                    <tr id="row-audit-<%= log.id %>" data-action="<%= (log.action || '').toLowerCase() %>"
+                      data-actor="<%= (log.actor_name || '').toLowerCase() %>">
+                      <td class="font-mono text-xs">#LOG-<%= String(log.id).padStart(4, '0' ) %>
+                      </td>
                       <td>
                         <span class="audit-action-chip action-<%= (log.action || '').toLowerCase() %>">
                           <%= log.action %>
                         </span>
                       </td>
                       <td>
-                        <span class="font-mono text-xs text-cyan"><%= log.table_name %></span>
+                        <span class="font-mono text-xs text-cyan">
+                          <%= log.table_name %>
+                        </span>
                         <% if (log.record_id) { %>
                           <span class="text-xs text-muted">#<%= log.record_id %></span>
-                        <% } %>
+                          <% } %>
                       </td>
                       <td>
                         <div class="flex items-center gap-1.5">
-                          <span style="font-weight: 500; color: #0F172A;"><%= log.actor_name || (log.actor_user_id ? 'Officer #' + log.actor_user_id : 'Public / System') %></span>
+                          <span style="font-weight: 500; color: #0F172A;">
+                            <%= log.actor_name || (log.actor_user_id ? 'Officer #' + log.actor_user_id
+                              : 'Public / System' ) %>
+                          </span>
                           <% if (log.actor_role) { %>
-                            <span class="role-chip sm role-<%= log.actor_role %>"><%= log.actor_role.toUpperCase() %></span>
-                          <% } %>
+                            <span class="role-chip sm role-<%= log.actor_role %>">
+                              <%= log.actor_role.toUpperCase() %>
+                            </span>
+                            <% } %>
                         </div>
                       </td>
-                      <td class="text-sm text-muted"><%= new Date(log.created_at).toLocaleString('en-US', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) %></td>
+                      <td class="text-sm text-muted">
+                        <%= new Date(log.created_at).toLocaleString('en-US', { day: '2-digit' , month: 'short' ,
+                          year: 'numeric' , hour: '2-digit' , minute: '2-digit' }) %>
+                      </td>
                       <td>
                         <span class="audit-verified-badge">
-                          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor"
+                            stroke-width="2.5">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                          </svg>
                           Verified
                         </span>
                       </td>
                     </tr>
-                  <% }) %>
-                <% } else { %>
-                  <tr>
-                    <td colspan="6" class="text-center py-8 text-muted">No audit transactions logged yet.</td>
-                  </tr>
-                <% } %>
-                <tr id="audit-no-results-row" style="display: none;">
-                  <td colspan="6" class="text-center py-8 text-muted">
-                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; padding: 1.5rem 0;">
-                      <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="#94A3B8" stroke-width="1.8"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                      <span style="font-weight: 500; color: #475569;">No audit logs match your search.</span>
-                    </div>
-                  </td>
-                </tr>
+                    <% }) %>
+                      <% } else { %>
+                        <tr>
+                          <td colspan="6" class="text-center py-8 text-muted">No audit transactions logged yet.</td>
+                        </tr>
+                        <% } %>
+                          <tr id="audit-no-results-row" style="display: none;">
+                            <td colspan="6" class="text-center py-8 text-muted">
+                              <div
+                                style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; padding: 1.5rem 0;">
+                                <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="#94A3B8"
+                                  stroke-width="1.8">
+                                  <circle cx="11" cy="11" r="8"></circle>
+                                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                </svg>
+                                <span style="font-weight: 500; color: #475569;">No audit logs match your search.</span>
+                              </div>
+                            </td>
+                          </tr>
               </tbody>
             </table>
           </div>
@@ -706,33 +1003,46 @@
           <!-- Audit Trail Pagination Footer -->
           <div class="table-pagination-footer" id="audit-pagination-footer">
             <div class="pagination-info" id="audit-pagination-info">
-              Showing <span id="audit-page-start">1</span>–<span id="audit-page-end">10</span> of <span id="audit-page-total"><%= (typeof auditLogs !== 'undefined' && auditLogs) ? auditLogs.length : 0 %></span> logs
+              Showing <span id="audit-page-start">1</span>–<span id="audit-page-end">10</span> of <span
+                id="audit-page-total">
+                <%= (typeof auditLogs !=='undefined' && auditLogs) ? auditLogs.length : 0 %>
+              </span> logs
             </div>
 
             <div class="pagination-actions">
               <div class="pagination-page-size-wrap">
                 <label for="audit-page-size" class="text-xs text-muted">Per page:</label>
                 <div class="custom-filter-dropdown-wrap" style="width: auto;">
-                  <select id="audit-page-size" class="admin-page-size-select" onchange="changeAuditPageSize(this.value)">
+                  <select id="audit-page-size" class="admin-page-size-select"
+                    onchange="changeAuditPageSize(this.value)">
                     <option value="10" selected>10</option>
                     <option value="20">20</option>
                     <option value="50">50</option>
                   </select>
-                  <svg class="select-chevron-sm" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                  <svg class="select-chevron-sm" viewBox="0 0 24 24" width="12" height="12" fill="none"
+                    stroke="currentColor" stroke-width="2">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                  </svg>
                 </div>
               </div>
 
               <div class="pagination-nav-group" id="audit-pagination-nav">
-                <button type="button" class="pagination-nav-btn prev" id="audit-btn-prev" onclick="goToAuditPage(auditCurrentPage - 1)" title="Previous page">
-                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                <button type="button" class="pagination-nav-btn prev" id="audit-btn-prev"
+                  onclick="goToAuditPage(auditCurrentPage - 1)" title="Previous page">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                  </svg>
                   <span>Prev</span>
                 </button>
                 <div class="pagination-page-numbers" id="audit-page-numbers">
                   <!-- Generated via JS -->
                 </div>
-                <button type="button" class="pagination-nav-btn next" id="audit-btn-next" onclick="goToAuditPage(auditCurrentPage + 1)" title="Next page">
+                <button type="button" class="pagination-nav-btn next" id="audit-btn-next"
+                  onclick="goToAuditPage(auditCurrentPage + 1)" title="Next page">
                   <span>Next</span>
-                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                  </svg>
                 </button>
               </div>
             </div>
@@ -741,438 +1051,692 @@
       </section>
     </div>
   </main>
-</div>
-
-<!-- Modal: Log New Found Item (<dialog>) -->
-<dialog id="log-item-dialog" class="custom-dialog lg" aria-labelledby="dialog-new-item-title">
-  <div class="dialog-header">
-    <div class="dialog-title-wrapper">
-      <span class="category-chip">Asset Registration</span>
-      <h2 id="dialog-new-item-title" class="dialog-title">Log New Found Item</h2>
-    </div>
-    <button type="button" class="btn-close-dialog" onclick="closeNewItemModal()" aria-label="Close dialog">
-      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-    </button>
   </div>
 
-  <form id="new-item-form" onsubmit="submitNewItem(event)" class="dialog-form">
-    <div class="form-row-2">
-      <div class="form-group">
-        <label for="new-item-title" class="form-label required">Item Title</label>
-        <input type="text" id="new-item-title" name="title" class="form-input" placeholder="e.g. Blue Hydroflask Water Bottle" required maxlength="150">
+  <!-- Modal: Log New Found Item (<dialog>) -->
+  <dialog id="log-item-dialog" class="custom-dialog lg" aria-labelledby="dialog-new-item-title">
+    <div class="dialog-header">
+      <div class="dialog-title-wrapper">
+        <span class="category-chip">Asset Registration</span>
+        <h2 id="dialog-new-item-title" class="dialog-title">Log New Found Item</h2>
       </div>
-      <div class="form-group">
-        <label for="new-item-category" class="form-label required">Category</label>
-        <select id="new-item-category" name="category_id" class="form-select" required>
-          <option value="">Select Category</option>
-          <% if (typeof categories !== 'undefined' && categories.length > 0) { %>
-            <% categories.forEach(cat => { %>
-              <option value="<%= cat.category_id %>"><%= cat.category_name %></option>
-            <% }) %>
-          <% } %>
-        </select>
-      </div>
-    </div>
-
-    <div class="form-row-2">
-      <div class="form-group">
-        <label for="new-item-location" class="form-label required">Found Location</label>
-        <select id="new-item-location" name="location_id" class="form-select" required>
-          <option value="">Select Location</option>
-          <% if (typeof locations !== 'undefined' && locations.length > 0) { %>
-            <% locations.forEach(loc => { %>
-              <option value="<%= loc.location_id %>"><%= loc.location_name %></option>
-            <% }) %>
-          <% } %>
-        </select>
-      </div>
-      <div class="form-group">
-        <label for="new-item-found-at" class="form-label required">Date & Time Found</label>
-        <input type="datetime-local" id="new-item-found-at" name="found_at" class="form-input" required value="<%= new Date().toISOString().slice(0, 16) %>">
-      </div>
-    </div>
-
-    <div class="form-row-2">
-      <div class="form-group">
-        <label for="new-item-finder-name" class="form-label required">Finder / Surrendered By</label>
-        <input type="text" id="new-item-finder-name" name="finder_name" class="form-input" placeholder="e.g. Student / Finder Name" required maxlength="100">
-      </div>
-      <div class="form-group">
-        <label for="new-item-finder-contact" class="form-label">Finder Contact (Optional)</label>
-        <input type="text" id="new-item-finder-contact" name="finder_contact" class="form-input" placeholder="Phone or email" maxlength="150">
-      </div>
-    </div>
-
-    <div class="form-group">
-      <label for="new-item-serial-number" class="form-label">Serial Number / Unique Markings <span class="text-muted">(Optional)</span></label>
-      <input type="text" id="new-item-serial-number" name="serial_number" class="form-input" placeholder="e.g. SN-8823901, device IMEI, or engraved initials" maxlength="255">
-    </div>
-
-    <div class="form-group">
-      <label for="new-item-desc" class="form-label">Public Item Description</label>
-      <textarea id="new-item-desc" name="description" class="form-textarea" rows="2" placeholder="Public physical details (color, brand, visible scratches) visible on public catalog..." maxlength="2000"></textarea>
-    </div>
-
-    <div class="form-group confidential-group">
-      <label for="new-item-storage-notes" class="form-label">
-        <span>Confidential Storage & Security Notes</span>
-        <span class="badge-lock">Internal Only</span>
-      </label>
-      <textarea id="new-item-storage-notes" name="storage_notes" class="form-textarea" rows="2" placeholder="Secret markings, exact locker slot, serial numbers. Hidden from public." maxlength="2000"></textarea>
-    </div>
-
-    <div class="form-group">
-      <label class="form-label required">Item Photo (Upload File or Enter URL)</label>
-      <input type="file" id="new-item-image-file" name="image_file" accept="image/png, image/jpeg, image/webp" class="form-input" style="padding: 6px 12px; margin-bottom: 6px;">
-      <input type="url" id="new-item-image-url" name="image_url" class="form-input" placeholder="Or paste image URL (https://...)" maxlength="500">
-    </div>
-
-    <div class="dialog-footer">
-      <button type="button" class="btn btn-outline" onclick="closeNewItemModal()">Cancel</button>
-      <button type="submit" class="btn btn-primary" id="btn-submit-new-item">
-        <span class="btn-text">Record in Custody</span>
+      <button type="button" class="btn-close-dialog" onclick="closeNewItemModal()" aria-label="Close dialog">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
       </button>
     </div>
-  </form>
-</dialog>
 
-<!-- Modal: Edit Found Item (<dialog>) -->
-<dialog id="edit-item-dialog" class="custom-dialog lg" aria-labelledby="dialog-edit-item-title">
-  <div class="dialog-header">
-    <div class="dialog-title-wrapper">
-      <span class="category-chip">Record Amendment</span>
-      <h2 id="dialog-edit-item-title" class="dialog-title">Edit Item Details</h2>
-    </div>
-    <button type="button" class="btn-close-dialog" onclick="closeEditItemModal()" aria-label="Close dialog">
-      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-    </button>
-  </div>
-
-  <form id="edit-item-form" onsubmit="submitEditItem(event)" class="dialog-form">
-    <input type="hidden" id="edit-item-id" name="item_id">
-
-    <div class="form-row-2">
-      <div class="form-group">
-        <label for="edit-item-title" class="form-label required">Item Title</label>
-        <input type="text" id="edit-item-title" name="title" class="form-input" required maxlength="150">
+    <form id="new-item-form" onsubmit="submitNewItem(event)" class="dialog-form">
+      <div class="form-row-2">
+        <div class="form-group">
+          <label for="new-item-title" class="form-label required">Item Title</label>
+          <input type="text" id="new-item-title" name="title" class="form-input"
+            placeholder="e.g. Blue Hydroflask Water Bottle" required maxlength="150">
+        </div>
+        <div class="form-group">
+          <label for="new-item-category" class="form-label required">Category</label>
+          <select id="new-item-category" name="category_id" class="form-select" required>
+            <option value="">Select Category</option>
+            <% if (typeof categories !=='undefined' && categories.length> 0) { %>
+              <% categories.forEach(cat=> { %>
+                <option value="<%= cat.category_id %>">
+                  <%= cat.category_name %>
+                </option>
+                <% }) %>
+                  <% } %>
+          </select>
+        </div>
       </div>
-      <div class="form-group">
-        <label for="edit-item-status" class="form-label required">Custodian Status</label>
-        <select id="edit-item-status" name="item_status" class="form-select" required>
-          <option value="stored">STORED (In safe keeping)</option>
-          <option value="processing">PROCESSING (Verification ongoing)</option>
-          <option value="claimed">CLAIMED (Reunited with owner)</option>
-        </select>
+
+      <div class="form-row-2">
+        <div class="form-group">
+          <label for="new-item-location" class="form-label required">Found Location</label>
+          <select id="new-item-location" name="location_id" class="form-select" required>
+            <option value="">Select Location</option>
+            <% if (typeof locations !=='undefined' && locations.length> 0) { %>
+              <% locations.forEach(loc=> { %>
+                <option value="<%= loc.location_id %>">
+                  <%= loc.location_name %>
+                </option>
+                <% }) %>
+                  <% } %>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="new-item-found-at" class="form-label required">Date & Time Found</label>
+          <input type="datetime-local" id="new-item-found-at" name="found_at" class="form-input" required
+            value="<%= new Date().toISOString().slice(0, 16) %>">
+        </div>
       </div>
-    </div>
 
-    <div class="form-row-2">
-      <div class="form-group">
-        <label for="edit-item-category" class="form-label required">Category</label>
-        <select id="edit-item-category" name="category_id" class="form-select" required>
-          <option value="">Select Category</option>
-          <% if (typeof categories !== 'undefined' && categories.length > 0) { %>
-            <% categories.forEach(cat => { %>
-              <option value="<%= cat.category_id %>"><%= cat.category_name %></option>
-            <% }) %>
-          <% } %>
-        </select>
+      <div class="form-row-2">
+        <div class="form-group">
+          <label for="new-item-finder-name" class="form-label required">Finder / Surrendered By</label>
+          <input type="text" id="new-item-finder-name" name="finder_name" class="form-input"
+            placeholder="e.g. Student / Finder Name" required maxlength="100">
+        </div>
+        <div class="form-group">
+          <label for="new-item-finder-contact" class="form-label">Finder Contact (Optional)</label>
+          <input type="text" id="new-item-finder-contact" name="finder_contact" class="form-input"
+            placeholder="Phone or email" maxlength="150">
+        </div>
       </div>
+
       <div class="form-group">
-        <label for="edit-item-location" class="form-label required">Location</label>
-        <select id="edit-item-location" name="location_id" class="form-select" required>
-          <option value="">Select Location</option>
-          <% if (typeof locations !== 'undefined' && locations.length > 0) { %>
-            <% locations.forEach(loc => { %>
-              <option value="<%= loc.location_id %>"><%= loc.location_name %></option>
-            <% }) %>
-          <% } %>
-        </select>
+        <label for="new-item-serial-number" class="form-label">Serial Number / Unique Markings <span
+            class="text-muted">(Optional)</span></label>
+        <input type="text" id="new-item-serial-number" name="serial_number" class="form-input"
+          placeholder="e.g. SN-8823901, device IMEI, or engraved initials" maxlength="255">
       </div>
-    </div>
 
-    <div class="form-group">
-      <label for="edit-item-desc" class="form-label">Public Description</label>
-      <textarea id="edit-item-desc" name="description" class="form-textarea" rows="2"></textarea>
-    </div>
+      <div class="form-group">
+        <label for="new-item-desc" class="form-label">Public Item Description</label>
+        <textarea id="new-item-desc" name="description" class="form-textarea" rows="2"
+          placeholder="Public physical details (color, brand, visible scratches) visible on public catalog..."
+          maxlength="2000"></textarea>
+      </div>
 
-    <div class="form-group">
-      <label for="edit-item-serial-number" class="form-label">Serial Number / Unique Markings <span class="text-muted">(Optional)</span></label>
-      <input type="text" id="edit-item-serial-number" name="serial_number" class="form-input" placeholder="e.g. SN-8823901" maxlength="255">
-    </div>
+      <div class="form-group confidential-group">
+        <label for="new-item-storage-notes" class="form-label">
+          <span>Confidential Storage & Security Notes</span>
+          <span class="badge-lock">Internal Only</span>
+        </label>
+        <textarea id="new-item-storage-notes" name="storage_notes" class="form-textarea" rows="2"
+          placeholder="Secret markings, exact locker slot, serial numbers. Hidden from public."
+          maxlength="2000"></textarea>
+      </div>
 
-    <div class="form-group confidential-group">
-      <label for="edit-item-storage-notes" class="form-label">Confidential Storage Notes</label>
-      <textarea id="edit-item-storage-notes" name="storage_notes" class="form-textarea" rows="2"></textarea>
-    </div>
+      <div class="form-group">
+        <label class="form-label required">Item Photo (Upload File or Enter URL)</label>
+        <input type="file" id="new-item-image-file" name="image_file" accept="image/png, image/jpeg, image/webp"
+          class="form-input" style="padding: 6px 12px; margin-bottom: 6px;">
+        <input type="url" id="new-item-image-url" name="image_url" class="form-input"
+          placeholder="Or paste image URL (https://...)" maxlength="500">
+      </div>
 
-    <div class="dialog-footer">
-      <button type="button" class="btn btn-outline" onclick="closeEditItemModal()">Cancel</button>
-      <button type="submit" class="btn btn-primary" id="btn-submit-edit-item">
-        <span class="btn-text">Update Record</span>
+      <div class="dialog-footer">
+        <button type="button" class="btn btn-outline" onclick="closeNewItemModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="btn-submit-new-item">
+          <span class="btn-text">Record in Custody</span>
+        </button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Modal: Edit Found Item (<dialog>) -->
+  <dialog id="edit-item-dialog" class="custom-dialog lg" aria-labelledby="dialog-edit-item-title">
+    <div class="dialog-header">
+      <div class="dialog-title-wrapper">
+        <span class="category-chip">Record Amendment</span>
+        <h2 id="dialog-edit-item-title" class="dialog-title">Edit Item Details</h2>
+      </div>
+      <button type="button" class="btn-close-dialog" onclick="closeEditItemModal()" aria-label="Close dialog">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
       </button>
     </div>
-  </form>
-</dialog>
 
-<!-- Modal: In-Person Claim & Release (<dialog>) -->
-<dialog id="in-person-claim-dialog" class="custom-dialog md" aria-labelledby="dialog-in-person-claim-title">
-  <div class="dialog-header">
-    <div class="dialog-title-wrapper">
-      <span class="category-chip" style="background: #E0F2FE; color: #0284C7;">Custody Release</span>
-      <h2 id="dialog-in-person-claim-title" class="dialog-title">Process In-Person Claim</h2>
-    </div>
-    <button type="button" class="btn-close-dialog" onclick="closeInPersonClaimModal()" aria-label="Close dialog">
-      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-    </button>
-  </div>
+    <form id="edit-item-form" onsubmit="submitEditItem(event)" class="dialog-form">
+      <input type="hidden" id="edit-item-id" name="item_id">
 
-  <form id="in-person-claim-form" onsubmit="submitInPersonClaim(event)" class="dialog-form">
-    <input type="hidden" id="in-person-item-id" name="item_id">
-
-    <div class="claim-meta-box mb-4" style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 1rem;">
-      <div style="font-size: 0.72rem; color: #64748B; text-transform: uppercase; font-weight: 700; margin-bottom: 0.25rem;">Releasing Item:</div>
-      <div id="in-person-item-summary" style="font-weight: 600; color: #0F172A; font-size: 1rem;">-</div>
-      <div id="in-person-item-ref" class="font-mono text-xs text-muted" style="margin-top: 0.2rem;">-</div>
-    </div>
-
-    <div class="form-row-2">
-      <div class="form-group">
-        <label for="in-person-claimant-name" class="form-label required">Claimant Full Name</label>
-        <input type="text" id="in-person-claimant-name" name="claimant_name" class="form-input" placeholder="e.g. Maria Santos" required maxlength="50">
+      <div class="form-row-2">
+        <div class="form-group">
+          <label for="edit-item-title" class="form-label required">Item Title</label>
+          <input type="text" id="edit-item-title" name="title" class="form-input" required maxlength="150">
+        </div>
+        <div class="form-group">
+          <label for="edit-item-status" class="form-label required">Custodian Status</label>
+          <select id="edit-item-status" name="item_status" class="form-select" required>
+            <option value="stored">STORED (In safe keeping)</option>
+            <option value="processing">PROCESSING (Verification ongoing)</option>
+            <option value="claimed">CLAIMED (Reunited with owner)</option>
+          </select>
+        </div>
       </div>
-      <div class="form-group">
-        <label for="in-person-claimant-contact" class="form-label required">Contact Phone / Email</label>
-        <input type="text" id="in-person-claimant-contact" name="contact" class="form-input" placeholder="e.g. 09123456789 or student@cspc.edu.ph" required maxlength="50">
+
+      <div class="form-row-2">
+        <div class="form-group">
+          <label for="edit-item-category" class="form-label required">Category</label>
+          <select id="edit-item-category" name="category_id" class="form-select" required>
+            <option value="">Select Category</option>
+            <% if (typeof categories !=='undefined' && categories.length> 0) { %>
+              <% categories.forEach(cat=> { %>
+                <option value="<%= cat.category_id %>">
+                  <%= cat.category_name %>
+                </option>
+                <% }) %>
+                  <% } %>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="edit-item-location" class="form-label required">Location</label>
+          <select id="edit-item-location" name="location_id" class="form-select" required>
+            <option value="">Select Location</option>
+            <% if (typeof locations !=='undefined' && locations.length> 0) { %>
+              <% locations.forEach(loc=> { %>
+                <option value="<%= loc.location_id %>">
+                  <%= loc.location_name %>
+                </option>
+                <% }) %>
+                  <% } %>
+          </select>
+        </div>
       </div>
-    </div>
 
-    <div class="form-group">
-      <label for="in-person-id-type" class="form-label required">Presented Credential / ID Type</label>
-      <select id="in-person-id-type" class="form-select" required onchange="handleIdTypeChange(this.value)">
-        <option value="CSPC Student ID">CSPC Student ID Card</option>
-        <option value="Employee / Faculty ID">CSPC Employee / Faculty ID</option>
-        <option value="National ID / PhilSys">Philippine National ID (PhilSys)</option>
-        <option value="Driver's License">Driver's License</option>
-        <option value="Passport / Other Gov ID">Passport / Other Government ID</option>
-        <option value="Device Match & Verification">Phone/Device Passcode & Lockscreen Match</option>
-      </select>
-    </div>
+      <div class="form-group">
+        <label for="edit-item-desc" class="form-label">Public Description</label>
+        <textarea id="edit-item-desc" name="description" class="form-textarea" rows="2"></textarea>
+      </div>
 
-    <div class="form-group">
-      <label for="in-person-id-number" class="form-label required">ID Number / Credential Details</label>
-      <input type="text" id="in-person-id-number" class="form-input" placeholder="e.g. Student ID #2023-10492" required maxlength="100">
-    </div>
+      <div class="form-group">
+        <label for="edit-item-serial-number" class="form-label">Serial Number / Unique Markings <span
+            class="text-muted">(Optional)</span></label>
+        <input type="text" id="edit-item-serial-number" name="serial_number" class="form-input"
+          placeholder="e.g. SN-8823901" maxlength="255">
+      </div>
 
-    <div class="form-group">
-      <label for="in-person-verification-proof" class="form-label required">Officer Verification Notes & Proof</label>
-      <textarea id="in-person-verification-proof" class="form-textarea" rows="2" placeholder="e.g. Verified student ID photo and matching phone lockscreen. Item released in person at Security Desk." required maxlength="2000"></textarea>
-    </div>
+      <div class="form-group confidential-group">
+        <label for="edit-item-storage-notes" class="form-label">Confidential Storage Notes</label>
+        <textarea id="edit-item-storage-notes" name="storage_notes" class="form-textarea" rows="2"></textarea>
+      </div>
 
-    <div class="dialog-footer">
-      <button type="button" class="btn btn-outline" onclick="closeInPersonClaimModal()">Cancel</button>
-      <button type="submit" class="btn btn-success" id="btn-submit-in-person-claim" style="background: #059669; border-color: #059669; color: #fff;">
-        <span class="btn-text">Verify Credential & Release Item</span>
+      <div class="dialog-footer">
+        <button type="button" class="btn btn-outline" onclick="closeEditItemModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="btn-submit-edit-item">
+          <span class="btn-text">Update Record</span>
+        </button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Modal: In-Person Claim & Release (<dialog>) -->
+  <dialog id="in-person-claim-dialog" class="custom-dialog md" aria-labelledby="dialog-in-person-claim-title">
+    <div class="dialog-header">
+      <div class="dialog-title-wrapper">
+        <span class="category-chip" style="background: #E0F2FE; color: #0284C7;">Custody Release</span>
+        <h2 id="dialog-in-person-claim-title" class="dialog-title">Process In-Person Claim</h2>
+      </div>
+      <button type="button" class="btn-close-dialog" onclick="closeInPersonClaimModal()" aria-label="Close dialog">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
       </button>
     </div>
-  </form>
-</dialog>
 
-<!-- Modal: Inspect & Review Claim (<dialog>) -->
-<dialog id="review-claim-dialog" class="custom-dialog lg" aria-labelledby="dialog-claim-review-title">
-  <div class="dialog-header">
-    <div style="display: flex; align-items: center; gap: 0.75rem;">
-      <div class="dialog-header-crest">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#2563EB" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+    <form id="in-person-claim-form" onsubmit="submitInPersonClaim(event)" class="dialog-form">
+      <input type="hidden" id="in-person-item-id" name="item_id">
+
+      <div class="claim-meta-box mb-4"
+        style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 1rem;">
+        <div
+          style="font-size: 0.72rem; color: #64748B; text-transform: uppercase; font-weight: 700; margin-bottom: 0.25rem;">
+          Releasing Item:</div>
+        <div id="in-person-item-summary" style="font-weight: 600; color: #0F172A; font-size: 1rem;">-</div>
+        <div id="in-person-item-ref" class="font-mono text-xs text-muted" style="margin-top: 0.2rem;">-</div>
       </div>
-      <div>
-        <div style="display: flex; align-items: center; gap: 0.5rem;">
-          <h2 id="dialog-claim-review-title" class="dialog-title" style="margin: 0; font-size: 1.15rem;">Inspect & View Claim</h2>
-          <span class="claim-ref-tag" id="modal-review-claim-id">#CLM-0000</span>
-          <span id="modal-review-claim-status-badge">
-            <span class="status-pill-subtle pending-verification" id="modal-review-claim-status">
-              <span class="pulse-dot-amber"></span>
-              <span>Pending Verification</span>
+
+      <div class="form-row-2">
+        <div class="form-group">
+          <label for="in-person-claimant-name" class="form-label required">Claimant Full Name</label>
+          <input type="text" id="in-person-claimant-name" name="claimant_name" class="form-input"
+            placeholder="e.g. Maria Santos" required maxlength="50">
+        </div>
+        <div class="form-group">
+          <label for="in-person-claimant-contact" class="form-label required">Contact Phone / Email</label>
+          <input type="text" id="in-person-claimant-contact" name="contact" class="form-input"
+            placeholder="e.g. 09123456789 or student@cspc.edu.ph" required maxlength="50">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="in-person-id-type" class="form-label required">Presented Credential / ID Type</label>
+        <select id="in-person-id-type" class="form-select" required onchange="handleIdTypeChange(this.value)">
+          <option value="CSPC Student ID">CSPC Student ID Card</option>
+          <option value="Employee / Faculty ID">CSPC Employee / Faculty ID</option>
+          <option value="National ID / PhilSys">Philippine National ID (PhilSys)</option>
+          <option value="Driver's License">Driver's License</option>
+          <option value="Passport / Other Gov ID">Passport / Other Government ID</option>
+          <option value="Device Match & Verification">Phone/Device Passcode & Lockscreen Match</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="in-person-id-number" class="form-label required">ID Number / Credential Details</label>
+        <input type="text" id="in-person-id-number" class="form-input" placeholder="e.g. Student ID #2023-10492"
+          required maxlength="100">
+      </div>
+
+      <div class="form-group">
+        <label for="in-person-verification-proof" class="form-label required">Officer Verification Notes & Proof</label>
+        <textarea id="in-person-verification-proof" class="form-textarea" rows="2"
+          placeholder="e.g. Verified student ID photo and matching phone lockscreen. Item released in person at Security Desk."
+          required maxlength="2000"></textarea>
+      </div>
+
+      <div class="dialog-footer">
+        <button type="button" class="btn btn-outline" onclick="closeInPersonClaimModal()">Cancel</button>
+        <button type="submit" class="btn btn-success" id="btn-submit-in-person-claim"
+          style="background: #059669; border-color: #059669; color: #fff;">
+          <span class="btn-text">Verify Credential & Release Item</span>
+        </button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Modal: Inspect & Review Claim (<dialog>) -->
+  <dialog id="review-claim-dialog" class="custom-dialog lg" aria-labelledby="dialog-claim-review-title">
+    <div class="dialog-header">
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <div class="dialog-header-crest">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#2563EB" stroke-width="2">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+        </div>
+        <div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <h2 id="dialog-claim-review-title" class="dialog-title" style="margin: 0; font-size: 1.15rem;">Inspect &
+              View Claim</h2>
+            <span class="claim-ref-tag" id="modal-review-claim-id">#CLM-0000</span>
+            <span id="modal-review-claim-status-badge">
+              <span class="status-pill-subtle pending-verification" id="modal-review-claim-status">
+                <span class="pulse-dot-amber"></span>
+                <span>Pending Verification</span>
+              </span>
             </span>
-          </span>
-        </div>
-        <p class="dialog-subtitle-text">Examine claimant identity, submitted proof of ownership, and record chain of custody decision.</p>
-      </div>
-    </div>
-    <button type="button" class="btn-close-dialog" onclick="closeReviewClaimModal()" aria-label="Close dialog">
-      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-    </button>
-  </div>
-
-  <div class="dialog-body" style="padding: 1.25rem 1.5rem;">
-    <!-- Target Item Banner -->
-    <div class="inspect-item-banner">
-      <div class="inspect-item-icon">
-        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#2563EB" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
-      </div>
-      <div class="inspect-item-info">
-        <div class="inspect-label-row">
-          <span class="inspect-sec-label">TARGET INVENTORY PROPERTY</span>
-          <span class="inspect-item-code" id="modal-claim-item-code">REF: #FI-0000</span>
-        </div>
-        <div class="inspect-item-title" id="modal-claim-item-title">-</div>
-        <div class="inspect-item-meta">
-          <span>Date Filed: <strong id="modal-claim-date" style="color: #334155;">-</strong></span>
+          </div>
+          <p class="dialog-subtitle-text">Examine claimant identity, submitted proof of ownership, and record chain of
+            custody decision.</p>
         </div>
       </div>
-    </div>
-
-    <!-- Claimant Credentials Grid -->
-    <div class="inspect-section-title">CLAIMANT IDENTIFICATION & CREDENTIALS</div>
-    <div class="inspect-credentials-grid">
-      <div class="inspect-info-card">
-        <div class="inspect-card-icon">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#475569" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-        </div>
-        <div>
-          <div class="inspect-card-label">Claimant Full Name</div>
-          <div class="inspect-card-value font-semibold" id="modal-claim-claimant-name">-</div>
-        </div>
-      </div>
-
-      <div class="inspect-info-card">
-        <div class="inspect-card-icon">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#475569" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-        </div>
-        <div>
-          <div class="inspect-card-label">Contact Phone</div>
-          <div class="inspect-card-value font-mono" id="modal-claim-phone">-</div>
-        </div>
-      </div>
-
-      <div class="inspect-info-card">
-        <div class="inspect-card-icon">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#475569" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
-        </div>
-        <div>
-          <div class="inspect-card-label">Email Address</div>
-          <div class="inspect-card-value font-mono" id="modal-claim-email">-</div>
-        </div>
-      </div>
-
-      <div class="inspect-info-card">
-        <div class="inspect-card-icon">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#475569" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
-        </div>
-        <div>
-          <div class="inspect-card-label">Custody Status</div>
-          <div class="inspect-card-value font-semibold" id="modal-claim-custody-text">Under Verification</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Proof of Ownership Card -->
-    <div class="inspect-proof-card">
-      <div class="inspect-proof-header">
-        <div class="inspect-proof-icon">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#D97706" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
-        </div>
-        <div>
-          <div class="inspect-proof-title">Claimant Submitted Proof of Ownership</div>
-          <div class="inspect-proof-subtitle">Confidential private markings, identifying features, unlock secrets, or contents provided by claimant</div>
-        </div>
-      </div>
-      <div class="inspect-proof-body" id="modal-claim-proof">-</div>
-    </div>
-
-
-
-  <div class="dialog-footer" id="modal-claim-actions-footer" style="display: flex; justify-content: space-between; align-items: center;">
-    <button type="button" class="btn btn-outline" onclick="closeReviewClaimModal()">
-      <span>Close</span>
-    </button>
-    <div style="display: flex; align-items: center; gap: 0.65rem;">
-      <button type="button" class="btn-reject-claim" onclick="submitClaimDecision('rejected')" id="btn-reject-claim">
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-        <span>Reject Claim</span>
-      </button>
-      <button type="button" class="btn-approve-claim" onclick="submitClaimDecision('accepted')" id="btn-approve-claim">
-        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-        <span>Approve & Release Item</span>
+      <button type="button" class="btn-close-dialog" onclick="closeReviewClaimModal()" aria-label="Close dialog">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
       </button>
     </div>
-  </div>
-</dialog>
 
-<!-- Modal: Item Photo Preview (<dialog>) -->
-<dialog id="image-preview-dialog" class="custom-dialog md" aria-labelledby="dialog-image-preview-title">
-  <div class="dialog-header">
-    <div style="display: flex; align-items: center; gap: 0.75rem;">
-      <div class="dialog-header-crest">
-        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#2563EB" stroke-width="2">
-          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-          <circle cx="8.5" cy="8.5" r="1.5"></circle>
-          <polyline points="21 15 16 10 5 21"></polyline>
+    <div class="dialog-body" style="padding: 1.25rem 1.5rem;">
+      <!-- Target Item Banner -->
+      <div class="inspect-item-banner">
+        <div class="inspect-item-icon">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#2563EB" stroke-width="2">
+            <path
+              d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z">
+            </path>
+            <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+            <line x1="12" y1="22.08" x2="12" y2="12"></line>
+          </svg>
+        </div>
+        <div class="inspect-item-info">
+          <div class="inspect-label-row">
+            <span class="inspect-sec-label">TARGET INVENTORY PROPERTY</span>
+            <span class="inspect-item-code" id="modal-claim-item-code">REF: #FI-0000</span>
+          </div>
+          <div class="inspect-item-title" id="modal-claim-item-title">-</div>
+          <div class="inspect-item-meta">
+            <span>Date Filed: <strong id="modal-claim-date" style="color: #334155;">-</strong></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Claimant Credentials Grid -->
+      <div class="inspect-section-title">CLAIMANT IDENTIFICATION & CREDENTIALS</div>
+      <div class="inspect-credentials-grid">
+        <div class="inspect-info-card">
+          <div class="inspect-card-icon">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#475569" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+          </div>
+          <div>
+            <div class="inspect-card-label">Claimant Full Name</div>
+            <div class="inspect-card-value font-semibold" id="modal-claim-claimant-name">-</div>
+          </div>
+        </div>
+
+        <div class="inspect-info-card">
+          <div class="inspect-card-icon">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#475569" stroke-width="2">
+              <path
+                d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z">
+              </path>
+            </svg>
+          </div>
+          <div>
+            <div class="inspect-card-label">Contact Phone</div>
+            <div class="inspect-card-value font-mono" id="modal-claim-phone">-</div>
+          </div>
+        </div>
+
+        <div class="inspect-info-card">
+          <div class="inspect-card-icon">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#475569" stroke-width="2">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+              <polyline points="22,6 12,13 2,6"></polyline>
+            </svg>
+          </div>
+          <div>
+            <div class="inspect-card-label">Email Address</div>
+            <div class="inspect-card-value font-mono" id="modal-claim-email">-</div>
+          </div>
+        </div>
+
+        <div class="inspect-info-card">
+          <div class="inspect-card-icon">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#475569" stroke-width="2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 14 14"></polyline>
+            </svg>
+          </div>
+          <div>
+            <div class="inspect-card-label">Custody Status</div>
+            <div class="inspect-card-value font-semibold" id="modal-claim-custody-text">Under Verification</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Proof of Ownership Card -->
+      <div class="inspect-proof-card">
+        <div class="inspect-proof-header">
+          <div class="inspect-proof-icon">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#D97706" stroke-width="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+          </div>
+          <div>
+            <div class="inspect-proof-title">Claimant Submitted Proof of Ownership</div>
+            <div class="inspect-proof-subtitle">Confidential private markings, identifying features, unlock secrets, or
+              contents provided by claimant</div>
+          </div>
+        </div>
+        <div class="inspect-proof-body" id="modal-claim-proof">-</div>
+      </div>
+
+
+
+      <div class="dialog-footer" id="modal-claim-actions-footer"
+        style="display: flex; justify-content: space-between; align-items: center;">
+        <button type="button" class="btn btn-outline" onclick="closeReviewClaimModal()">
+          <span>Close</span>
+        </button>
+        <div style="display: flex; align-items: center; gap: 0.65rem;">
+          <button type="button" class="btn-reject-claim" onclick="submitClaimDecision('rejected')"
+            id="btn-reject-claim">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+            <span>Reject Claim</span>
+          </button>
+          <button type="button" class="btn-approve-claim" onclick="submitClaimDecision('accepted')"
+            id="btn-approve-claim">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            <span>Approve & Release Item</span>
+          </button>
+        </div>
+      </div>
+  </dialog>
+
+  <!-- Modal: Item Photo Preview (<dialog>) -->
+  <dialog id="image-preview-dialog" class="custom-dialog md" aria-labelledby="dialog-image-preview-title">
+    <div class="dialog-header">
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <div class="dialog-header-crest">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#2563EB" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+            <polyline points="21 15 16 10 5 21"></polyline>
+          </svg>
+        </div>
+        <div>
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <h2 id="dialog-image-preview-title" class="dialog-title" style="margin: 0; font-size: 1.15rem;">Item
+              Photograph</h2>
+            <span class="claim-ref-tag" id="preview-modal-ref">#FI-0000</span>
+          </div>
+          <p class="dialog-subtitle-text" id="preview-modal-caption">High-resolution catalog photograph</p>
+        </div>
+      </div>
+      <button type="button" class="btn-close-dialog" onclick="closeItemImagePreview()" aria-label="Close dialog">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+    <div class="dialog-body" style="padding: 1.25rem; display: flex; flex-direction: column; align-items: center;">
+      <div
+        style="width: 100%; max-height: 480px; background: #0B1120; border-radius: 12px; overflow: hidden; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 2px 8px rgba(0,0,0,0.4); border: 1px solid #1E293B;">
+        <img id="preview-modal-img" src="" alt="Item photo"
+          style="max-width: 100%; max-height: 480px; object-fit: contain; display: block;">
+      </div>
+    </div>
+    <div class="dialog-footer" style="display: flex; justify-content: flex-end;">
+      <button type="button" class="btn btn-outline" onclick="closeItemImagePreview()">Close</button>
+    </div>
+  </dialog>
+
+  <!-- Mobile Bottom Sheet: Inventory Filters (Image 2 style) -->
+  <dialog id="inventory-filter-sheet" class="bottom-sheet-dialog" aria-labelledby="inv-filter-sheet-title">
+    <div class="bottom-sheet-container">
+      <div class="bottom-sheet-handle-bar" aria-hidden="true"></div>
+      <div class="bottom-sheet-header">
+        <div class="sheet-title-group">
+          <button type="button" class="btn-sheet-close" onclick="closeInventoryFilterSheet()" aria-label="Close filters">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+          <h3 id="inv-filter-sheet-title" class="bottom-sheet-title">Filters</h3>
+        </div>
+        <button type="button" class="btn-sheet-reset" onclick="resetInventoryFiltersFromSheet()">Reset</button>
+      </div>
+
+      <div class="bottom-sheet-body">
+        <!-- Section: Categories -->
+        <div class="sheet-filter-group">
+          <h4 class="sheet-group-label">Filter by Category</h4>
+          <div class="sheet-pill-grid" id="sheet-category-pills">
+            <button type="button" class="sheet-filter-pill active" data-sheet-category="all" onclick="selectSheetInventoryCategory('all')">
+              <span>All Categories</span>
+            </button>
+            <% if (typeof categories !=='undefined' && categories.length> 0) { %>
+              <% categories.forEach(cat=> { %>
+                <button type="button" class="sheet-filter-pill" data-sheet-category="<%= cat.category_name.toLowerCase() %>" onclick="selectSheetInventoryCategory('<%= cat.category_name.toLowerCase() %>')">
+                  <span><%= cat.category_name %></span>
+                </button>
+              <% }) %>
+            <% } %>
+          </div>
+        </div>
+
+        <!-- Section: Statuses -->
+        <div class="sheet-filter-group">
+          <h4 class="sheet-group-label">Filter by Custody Status</h4>
+          <div class="sheet-pill-grid" id="sheet-status-pills">
+            <button type="button" class="sheet-filter-pill active" data-sheet-status="all" onclick="selectSheetInventoryStatus('all')">
+              <span>All Statuses</span>
+            </button>
+            <button type="button" class="sheet-filter-pill" data-sheet-status="stored" onclick="selectSheetInventoryStatus('stored')">
+              <span>Stored</span>
+            </button>
+            <button type="button" class="sheet-filter-pill" data-sheet-status="processing" onclick="selectSheetInventoryStatus('processing')">
+              <span>Processing</span>
+            </button>
+            <button type="button" class="sheet-filter-pill" data-sheet-status="claimed" onclick="selectSheetInventoryStatus('claimed')">
+              <span>Claimed</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="bottom-sheet-footer">
+        <button type="button" class="btn-sheet-apply" onclick="applyInventoryFilterSheet()">Apply Filters</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Mobile Bottom Sheet: Claims Filters (Image 2 style) -->
+  <dialog id="claims-filter-sheet" class="bottom-sheet-dialog" aria-labelledby="claim-filter-sheet-title">
+    <div class="bottom-sheet-container">
+      <div class="bottom-sheet-handle-bar" aria-hidden="true"></div>
+      <div class="bottom-sheet-header">
+        <div class="sheet-title-group">
+          <button type="button" class="btn-sheet-close" onclick="closeClaimsFilterSheet()" aria-label="Close filters">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+          <h3 id="claim-filter-sheet-title" class="bottom-sheet-title">Filters</h3>
+        </div>
+        <button type="button" class="btn-sheet-reset" onclick="resetClaimsFiltersFromSheet()">Reset</button>
+      </div>
+
+      <div class="bottom-sheet-body">
+        <!-- Section: Claim Verification Status -->
+        <div class="sheet-filter-group">
+          <h4 class="sheet-group-label">Filter by Claim Status</h4>
+          <div class="sheet-pill-grid" id="sheet-claim-status-pills">
+            <button type="button" class="sheet-filter-pill active" data-sheet-claim-status="all" onclick="selectSheetClaimStatus('all')">
+              <span>All</span>
+              <span class="sheet-pill-badge" id="sheet-count-claim-all"><%= claims ? claims.length : 0 %></span>
+            </button>
+            <button type="button" class="sheet-filter-pill" data-sheet-claim-status="pending" onclick="selectSheetClaimStatus('pending')">
+              <span class="pulse-dot-amber" style="width: 7px; height: 7px; margin-right: 4px; display: inline-block;"></span>
+              <span>Pending</span>
+              <span class="sheet-pill-badge" id="sheet-count-claim-pending"><%= tabPendingCount %></span>
+            </button>
+            <button type="button" class="sheet-filter-pill" data-sheet-claim-status="accepted" onclick="selectSheetClaimStatus('accepted')">
+              <span>Approved</span>
+              <span class="sheet-pill-badge" id="sheet-count-claim-accepted"><%= tabAcceptedCount %></span>
+            </button>
+            <button type="button" class="sheet-filter-pill" data-sheet-claim-status="rejected" onclick="selectSheetClaimStatus('rejected')">
+              <span>Rejected</span>
+              <span class="sheet-pill-badge" id="sheet-count-claim-rejected"><%= tabRejectedCount %></span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="bottom-sheet-footer">
+        <button type="button" class="btn-sheet-apply" onclick="applyClaimsFilterSheet()">Apply Filters</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Global Toast Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Modal: Logout Confirmation (<dialog>) -->
+  <dialog id="logout-confirm-dialog" class="custom-dialog sm" aria-labelledby="dialog-logout-title" style="position: relative;">
+    <button type="button" class="btn-close-dialog" onclick="closeLogoutDialog()" aria-label="Close dialog" style="position: absolute; top: 1rem; right: 1rem; z-index: 10;">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
+    <div class="dialog-body"
+      style="padding: 2.25rem 1.5rem 1.25rem; display: flex; flex-direction: column; align-items: center; gap: 1rem; text-align: center;">
+      <div
+        style="width: 52px; height: 52px; border-radius: 50%; background: #FEF2F2; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#DC2626" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+          <polyline points="16 17 21 12 16 7"></polyline>
+          <line x1="21" y1="12" x2="9" y2="12"></line>
         </svg>
       </div>
       <div>
-        <div style="display: flex; align-items: center; gap: 0.5rem;">
-          <h2 id="dialog-image-preview-title" class="dialog-title" style="margin: 0; font-size: 1.15rem;">Item Photograph</h2>
-          <span class="claim-ref-tag" id="preview-modal-ref">#FI-0000</span>
-        </div>
-        <p class="dialog-subtitle-text" id="preview-modal-caption">High-resolution catalog photograph</p>
+        <h3 id="dialog-logout-title" style="font-size: 1.05rem; font-weight: 700; color: #0F172A; margin: 0 0 0.35rem;">Are you sure you want to sign out?</h3>
+        <p style="font-size: 0.82rem; color: #64748B; margin: 0; line-height: 1.45;">Your active session will be terminated. Any unsaved changes will be lost.</p>
       </div>
     </div>
-    <button type="button" class="btn-close-dialog" onclick="closeItemImagePreview()" aria-label="Close dialog">
-      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-    </button>
-  </div>
-  <div class="dialog-body" style="padding: 1.25rem; display: flex; flex-direction: column; align-items: center;">
-    <div style="width: 100%; max-height: 480px; background: #0B1120; border-radius: 12px; overflow: hidden; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 2px 8px rgba(0,0,0,0.4); border: 1px solid #1E293B;">
-      <img id="preview-modal-img" src="" alt="Item photo" style="max-width: 100%; max-height: 480px; object-fit: contain; display: block;">
+    <div class="dialog-footer" style="justify-content: center; gap: 0.75rem; border-top: 1px solid #F1F5F9; padding: 1rem 1.5rem;">
+      <button type="button" class="btn btn-outline" onclick="closeLogoutDialog()">Cancel</button>
+      <a href="/logout" class="btn"
+        style="background: #DC2626; color: #fff; border: none; display: inline-flex; align-items: center; gap: 0.4rem;">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+          <polyline points="16 17 21 12 16 7"></polyline>
+          <line x1="21" y1="12" x2="9" y2="12"></line>
+        </svg>
+        Yes, Sign Out
+      </a>
     </div>
-  </div>
-  <div class="dialog-footer" style="display: flex; justify-content: flex-end;">
-    <button type="button" class="btn btn-outline" onclick="closeItemImagePreview()">Close</button>
-  </div>
-</dialog>
+  </dialog>
 
-<!-- Global Toast Container -->
-<div id="toast-container" class="toast-container"></div>
+  <!-- Mobile Bottom Tab Navigation Bar (staff / admin view) -->
+  <nav class="mobile-bottom-tab-bar" aria-label="Staff mobile navigation">
+    <a href="/dashboard?tab=items" class="mob-tab-item <%= activeTab === 'items' ? 'active' : '' %>" id="mob-tab-items"
+      aria-current="<%= activeTab === 'items' ? 'page' : 'false' %>"
+      onclick="switchDashboardTab('items'); return false;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+        stroke-linejoin="round">
+        <rect x="3" y="3" width="7" height="7"></rect>
+        <rect x="14" y="3" width="7" height="7"></rect>
+        <rect x="14" y="14" width="7" height="7"></rect>
+        <rect x="3" y="14" width="7" height="7"></rect>
+      </svg>
+      <span class="mob-tab-label">Inventory</span>
+    </a>
+    <a href="/dashboard?tab=claims" class="mob-tab-item <%= activeTab === 'claims' ? 'active' : '' %>"
+      id="mob-tab-claims" aria-current="<%= activeTab === 'claims' ? 'page' : 'false' %>"
+      onclick="switchDashboardTab('claims'); return false;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+        stroke-linejoin="round">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+        <polyline points="14 2 14 8 20 8"></polyline>
+        <line x1="16" y1="13" x2="8" y2="13"></line>
+      </svg>
+      <span class="mob-tab-label">Claims</span>
+    </a>
+    <button type="button" class="mob-tab-item accent-tab" id="mob-tab-add" onclick="openNewItemModal()" title="Add Found Item" aria-label="Add Found Item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="16"></line>
+        <line x1="8" y1="12" x2="16" y2="12"></line>
+      </svg>
+      <span class="mob-tab-label">Add Item</span>
+    </button>
+    <a href="/dashboard?tab=audit" class="mob-tab-item <%= activeTab === 'audit' ? 'active' : '' %>" id="mob-tab-audit"
+      aria-current="<%= activeTab === 'audit' ? 'page' : 'false' %>"
+      onclick="switchDashboardTab('audit'); return false;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+        stroke-linejoin="round">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+        <path d="M9 12l2 2 4-4"></path>
+      </svg>
+      <span class="mob-tab-label">Audit</span>
+    </a>
+    <a href="/dashboard?tab=analytics" class="mob-tab-item <%= activeTab === 'analytics' ? 'active' : '' %>" id="mob-tab-analytics"
+      aria-current="<%= activeTab === 'analytics' ? 'page' : 'false' %>"
+      onclick="switchDashboardTab('analytics'); return false;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+        stroke-linejoin="round">
+        <line x1="18" y1="20" x2="18" y2="10"></line>
+        <line x1="12" y1="20" x2="12" y2="4"></line>
+        <line x1="6" y1="20" x2="6" y2="14"></line>
+      </svg>
+      <span class="mob-tab-label">Analytics</span>
+    </a>
+  </nav>
 
-<!-- Mobile Bottom Tab Navigation Bar (staff / admin view) -->
-<nav class="mobile-bottom-tab-bar" aria-label="Staff mobile navigation">
-  <a href="/dashboard?tab=items" class="mob-tab-item <%= activeTab === 'items' ? 'active' : '' %>" id="mob-tab-items" aria-current="<%= activeTab === 'items' ? 'page' : 'false' %>" onclick="switchDashboardTab('items'); return false;">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect>
-      <rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect>
-    </svg>
-    <span class="mob-tab-label">Inventory</span>
-  </a>
-  <a href="/dashboard?tab=claims" class="mob-tab-item <%= activeTab === 'claims' ? 'active' : '' %>" id="mob-tab-claims" aria-current="<%= activeTab === 'claims' ? 'page' : 'false' %>" onclick="switchDashboardTab('claims'); return false;">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-      <polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line>
-    </svg>
-    <span class="mob-tab-label">Claims</span>
-  </a>
-  <a href="/admin/found-items/new" class="mob-tab-item accent-tab" id="mob-tab-add">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-      <circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line>
-    </svg>
-    <span class="mob-tab-label">Add Item</span>
-  </a>
-  <a href="/dashboard?tab=audit" class="mob-tab-item <%= activeTab === 'audit' ? 'active' : '' %>" id="mob-tab-audit" aria-current="<%= activeTab === 'audit' ? 'page' : 'false' %>" onclick="switchDashboardTab('audit'); return false;">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-      <path d="M9 12l2 2 4-4"></path>
-    </svg>
-    <span class="mob-tab-label">Audit</span>
-  </a>
-  <a href="/logout" class="mob-tab-item" id="mob-tab-logout" style="color: #EF4444;">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-      <polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line>
-    </svg>
-    <span class="mob-tab-label">Sign Out</span>
-  </a>
-</nav>
+  <script src="/js/chart.min.js"></script>
+  <script src="/js/app.js"></script>
+  </body>
 
-<script src="/js/app.js"></script>
-</body>
-</html>
+  </html>
