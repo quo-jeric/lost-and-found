@@ -40,13 +40,15 @@ export async function getTestPool() {
     }
 
     const [tableRows] = await pool.execute(
-      `SELECT table_name
+      `SELECT table_name AS table_name
        FROM information_schema.tables
        WHERE table_schema = ?
          AND table_name IN ('users', 'categories', 'locations', 'items', 'claims', 'audit_log', 'sessions')`,
       [testDatabaseName],
     );
-    const availableTables = new Set(tableRows.map(({ table_name }) => table_name));
+    const availableTables = new Set(
+      tableRows.map((row) => row.table_name || row.TABLE_NAME),
+    );
     const missingTables = [
       'users',
       'categories',

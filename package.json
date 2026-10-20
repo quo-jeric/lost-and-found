@@ -8,11 +8,13 @@
     "dev": "nodemon server.js",
     "start": "node server.js",
     "db:migrate": "node scripts/migrate.js",
+    "db:migrate:test": "node scripts/migrate-test.js",
     "check:no-delete": "! grep -rniE '(DELETE[[:space:]]+FROM|REPLACE[[:space:]]+INTO|TRUNCATE)' repositories services controllers routes middleware",
     "test": "npm run test:unit && npm run test:integration && npm run test:e2e",
     "test:unit": "vitest run tests/unit",
     "test:integration": "vitest run tests/integration",
     "test:e2e": "playwright test",
+    "pretest": "npm run db:migrate:test",
     "test:watch": "vitest"
   },
   "keywords": [],

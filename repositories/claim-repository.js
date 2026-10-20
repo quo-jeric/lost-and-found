@@ -127,17 +127,17 @@ export async function findClaims(conn, filters = {}, pagination = {}) {
   const params = [];
 
   if (item_id !== undefined && item_id !== null && item_id !== '') {
-    conditions.push('item_id = ?');
+    conditions.push('c.item_id = ?');
     params.push(Number(item_id));
   }
 
   if (claim_status) {
-    conditions.push('claim_status = ?');
+    conditions.push('c.claim_status = ?');
     params.push(claim_status);
   }
 
   if (search && typeof search === 'string' && search.trim() !== '') {
-    conditions.push('(claimant_name LIKE ? OR claimant_email LIKE ? OR claimant_phone LIKE ?)');
+    conditions.push('(c.claimant_name LIKE ? OR c.claimant_email LIKE ? OR c.claimant_phone LIKE ?)');
     const term = `%${search.trim()}%`;
     params.push(term, term, term);
   }
