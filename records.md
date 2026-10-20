@@ -82,13 +82,24 @@ lost-and-found-app/
 ├── specs/                           # Engineering guidelines and design documents
 │   ├── global-spec.md               # Architecture, API design, deletion policy, and coding standards
 │   └── database-schema-plan.md      # Detailed DB & migration architecture guide
-├── tests/                           # Unit and integration test suites
+├── tests/                           # Unit, integration, and browser E2E suites
 │   └── unit/
 │       ├── auth-middleware.test.js  # 19 unit tests covering requireAuth, requireRole, optionalAuth
 │       ├── items-service.test.js    # 46 unit tests covering addItem, editItem, getItemById, listItems, archiveItem
 │       ├── claims-service.test.js   # 61 unit tests covering raiseClaim, getClaimById, listClaims, reviewClaim
 │       ├── item-controller.test.js  # 9 unit tests covering all item HTTP handlers and envelopes
 │       └── claim-controller.test.js # 8 unit tests covering all claim HTTP handlers and envelopes
+│   ├── integration/                 # Supertest HTTP flows using a migrated MySQL *_test schema
+│   │   ├── auth.test.js             # Login, session profile, logout, and auth audit persistence
+│   │   ├── items.test.js            # Public reads, staff writes, archive behavior, and audit persistence
+│   │   └── claims.test.js           # Public claims, duplicate prevention, staff review, and persistence
+│   ├── e2e/                         # Playwright browser flows against the live app
+│   │   ├── public-claim.spec.js     # Public item selection through persisted claim submission
+│   │   └── test-server.js           # Playwright-managed app server using the isolated test database
+│   ├── helpers/
+│   │   └── test-database.js         # Test DB guard, app loader, fixture creation, safe cleanup
+│   └── TEST_PLAN.md                 # Per-suite test implementation plans and coverage map
+├── playwright.config.js             # Chromium E2E configuration and app lifecycle
 ├── app.js                           # Express app setup (session middleware, EJS view engine, routes, error handler)
 ├── server.js                        # HTTP server bootstrap with DB health-check
 ├── package.json                     # Project manifest and scripts
@@ -158,13 +169,13 @@ All migrations are tracked in `schema_migrations` with SHA-256 checksums. Applie
   - `isOperational = true`
 
 ### 4.4 Unit Testing Suite (`tests/unit/items-service.test.js`)
-- **Coverage**: 35 unit tests executed via Vitest.
+- **Coverage**: 46 unit tests executed via Vitest.
 - **Test Categories**:
   - `addItem`: Success path, transaction commit/release, metadata passing (`requestId`, `ipAddress`), transaction rollback on repository error, rollback on audit error, field-by-field validation checks, future date rejection, invalid status rejection, actor ID validation, foreign key remapping.
   - `editItem`: Success path, partial updates, transaction commit/release, protection against altering `logged_by`, 404 on non-existent item, rollback on failure, empty payload validation, invalid ID validation, field bounds validation, foreign key remapping.
   - `getItemById`: Success retrieval, null for non-existent item, 400 for invalid ID.
   - `AppError`: Prototype and operational flag verification.
-- **Run command**: `npm test` (passes 35/35 tests in ~500ms).
+- **Run command**: `npm run test:unit` (unit baseline currently passes 143 tests across all unit files).
 
 ### 4.5 Claims Repository (`repositories/claim-repository.js`)
 - **`findClaimById(conn, claimId, options)`**: Parameterized query with explicit projection of `CLAIM_COLUMNS`. Supports `{ forUpdate }` for row-level locking.
@@ -189,7 +200,7 @@ All migrations are tracked in `schema_migrations` with SHA-256 checksums. Applie
   - Validates `claimId` and retrieves claim using `pool` directly without transaction overhead.
 
 ### 4.7 Claims Unit Testing Suite (`tests/unit/claims-service.test.js`)
-- **Coverage**: 48 unit tests executed via Vitest.
+- **Coverage**: 61 unit tests executed via Vitest.
 - **Test Categories**:
   - `raiseClaim` success: with email+phone, email only, phone only; trimming, proof_description defaults, actorId=null audit, context forwarding, commit/release assertions.
   - `raiseClaim` validation failures: each required field, contact presence, format checks, length limits — all fail before acquiring a DB connection.
@@ -198,7 +209,7 @@ All migrations are tracked in `schema_migrations` with SHA-256 checksums. Applie
   - Transaction integrity: rollback on `insertClaim` failure, rollback on `writeAudit` failure, release even when rollback itself throws, FK remapping.
   - `getClaimById`: success retrieval, null on not-found, 400 on invalid ID, no transaction (pool used directly).
   - `AppError`: prototype and operational flag verification.
-- **Run command**: `npm test` (passes 83/83 tests in ~500ms — 35 items + 48 claims).
+- **Run command**: `npm run test:unit` (items + claims are part of the 143-test unit baseline).
 
 ### 4.8 Auth Middleware (`middleware/auth.js`)
 - **`requireAuth`**: Checks `req.session.userId` (must be a positive integer). On success sets `req.actorId` and `req.actorRole`. On failure passes `AppError(401, 'UNAUTHORIZED')` to the error handler.
@@ -228,7 +239,14 @@ All migrations are tracked in `schema_migrations` with SHA-256 checksums. Applie
 ### 4.12 Auth Middleware Unit Testing (`tests/unit/auth-middleware.test.js`)
 - **Coverage**: 19 unit tests executed via Vitest (no DB, no network — pure mock `req`/`res`/`next`).
 - **Test Categories**: `requireAuth` (6 tests: success, null role, no session, null userId, userId=0, string userId), `requireRole` (8 tests: single role match, multi-role match, array-form, unauthenticated, no userId, wrong role, no role, empty allowlist), `optionalAuth` (5 tests: authenticated, no session, userId=0, string userId, no role).
-- **Run command**: `npm test` (passes 102/102 tests — 19 auth + 35 items + 48 claims).
+- **Run command**: `npm run test:unit` (passes 143/143 tests across middleware, services, and controller suites).
+
+### 4.13 Integration & End-to-End Test Suites
+- Added Supertest integration coverage for API authentication, item create/update/archive, and public claim creation/staff review using the real Express app and MySQL session store.
+- Added Playwright Chromium coverage for the public catalog → item selection → claim dialog → persisted claim journey.
+- Test fixtures use unique identifiers and require `TEST_DB_NAME` to end in `_test`; test items are archived and test accounts deactivated during cleanup.
+- Added [`tests/TEST_PLAN.md`](./tests/TEST_PLAN.md) with a specific implementation plan and acceptance criteria for each suite.
+- **Test commands**: `npm run test:unit`, `npm run test:integration`, `npm run test:e2e`; `npm test` runs all tiers.
 
 ---
 
@@ -754,11 +772,8 @@ All migrations are tracked in `schema_migrations` with SHA-256 checksums. Applie
 - [x] **Unified Console Layout for Item Inventory & Claims Verification** (done)
 - [x] **Guard Dedicated Intake Console & Custom Modal Styling** (done)
 - [x] **Image Upload Handling** (done)
-- [ ] **Integration Tests**:
-  - Supertest HTTP test suite for auth + items + claims endpoints.
-  - `tests/integration/auth.test.js`: login, logout, /me, 401 on protected routes.
-  - `tests/integration/items.test.js`: public GET, protected POST/PUT/DELETE.
-  - `tests/integration/claims.test.js`: public POST, staff GET/PATCH.
+- [x] **HTTP Integration Tests**: Supertest coverage for auth, item, and claims flows against a migrated MySQL test schema.
+- [x] **Browser End-to-End Test**: Playwright Chromium coverage for public catalog item selection and claim submission.
 
 ---
 
