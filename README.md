@@ -54,10 +54,31 @@ Key environment variables:
    ```
 
 ### 5. Running Tests
-Run unit tests with Vitest:
+
+The complete test command runs unit, database-backed integration, and browser
+end-to-end tests. Integration and E2E tests require a separate MySQL test schema
+whose name ends with `_test` (for example, `lost_and_found_test`) and the
+`TEST_DB_*` environment variables shown in `.env.example`. Apply the migrations
+to that schema before running those suites. The test harness refuses to run if
+the configured database name does not end in `_test`. The migration script reads
+`DB_*` (not `TEST_DB_*`), so point its `DB_*` settings and migration credentials
+at the isolated test schema when applying migrations.
+
+Install Playwright's Chromium browser once:
 ```bash
+npx playwright install chromium
+```
+
+Run the test tiers:
+```bash
+npm run test:unit
+npm run test:integration
+npm run test:e2e
 npm test
 ```
+
+See [`tests/TEST_PLAN.md`](./tests/TEST_PLAN.md) for per-suite implementation
+plans and the API, database, session, and UI areas covered.
 
 ---
 
@@ -69,7 +90,10 @@ npm test
 | `npm start` | Starts server in production mode |
 | `npm run db:migrate` | Runs all pending database migrations in order |
 | `npm run check:no-delete` | Lints repository/service files to enforce no physical `DELETE` or `TRUNCATE` statements |
-| `npm test` | Runs the unit test suite with Vitest |
+| `npm test` | Runs unit, MySQL integration, and Playwright E2E suites |
+| `npm run test:unit` | Runs the isolated Vitest unit suite |
+| `npm run test:integration` | Runs Supertest HTTP flows against the isolated MySQL schema |
+| `npm run test:e2e` | Runs Playwright browser flows against the live test app |
 | `npm run test:watch` | Runs Vitest in watch mode for active development |
 
 ---
