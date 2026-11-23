@@ -1017,6 +1017,56 @@ body {
   justify-content: space-between;
   font-size: 0.74rem;
   color: var(--text-muted);
+  border-top: 1px solid var(--border-light, #E2E8F0);
+  padding-top: 1.25rem;
+  padding-bottom: 1.5rem;
+  gap: 1rem;
+}
+
+.footer-col-left,
+.footer-col-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.footer-bullet {
+  color: #94A3B8;
+  user-select: none;
+}
+
+.footer-subtext {
+  color: var(--text-dim, #94A3B8);
+}
+
+.footer-staff-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--text-muted, #64748B);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.72rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius-sm, 6px);
+  background: transparent;
+  transition: all 0.15s ease;
+}
+
+.footer-staff-link:hover {
+  color: var(--primary-teal, #0891B2);
+  background: rgba(8, 145, 178, 0.08);
+  text-decoration: none;
+}
+
+.footer-staff-link svg {
+  flex-shrink: 0;
+  opacity: 0.75;
+}
+
+.footer-staff-link:hover svg {
+  opacity: 1;
 }
 
 /* ── 10. Modals & Dialogs ────────────────────────────────────────────────── */
