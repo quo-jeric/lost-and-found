@@ -52,7 +52,8 @@
         </div>
         <% } %>
 
-          <!-- Quick Demo Role Fillers -->
+        <% if (typeof showDemoAccounts !== 'undefined' ? showDemoAccounts : (typeof process !== 'undefined' && process.env?.NODE_ENV !== 'production')) { %>
+          <!-- Quick Demo Role Fillers (Development / Staging Only) -->
           <div
             style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px; padding: 0.85rem; margin-bottom: 1.35rem;">
             <div
@@ -73,6 +74,7 @@
               </button>
             </div>
           </div>
+        <% } %>
 
           <form action="/login" method="POST" id="login-form">
             <% if (typeof redirectUrl !=='undefined' && redirectUrl) { %>
@@ -113,10 +115,12 @@
   </div>
 
   <script>
+    <% if (typeof showDemoAccounts !== 'undefined' ? showDemoAccounts : (typeof process !== 'undefined' && process.env?.NODE_ENV !== 'production')) { %>
     function fillCredentials(email, pwd) {
       document.getElementById('login-email').value = email;
       document.getElementById('login-password').value = pwd;
     }
+    <% } %>
 
     document.getElementById('login-form').addEventListener('submit', function (e) {
       const emailInput = document.getElementById('login-email');

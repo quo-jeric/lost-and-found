@@ -6,6 +6,7 @@ import { findAllCategories } from '../repositories/category-repository.js';
 import { findAllLocations } from '../repositories/location-repository.js';
 import { getLatestAuditLogs } from '../repositories/audit-repository.js';
 import { login, logout } from '../services/auth-service.js';
+import { loginLimiter } from '../middleware/rate-limiter.js';
 
 const router = Router();
 
@@ -108,11 +109,12 @@ router.get('/login', (req, res) => {
     title: 'Staff & Admin Login | CSPC Lost & Found',
     error: req.query.error || null,
     redirectUrl: req.query.redirect || null,
+    showDemoAccounts: process.env.NODE_ENV !== 'production',
   });
 });
 
 // POST /login - Unified form submission handler for staff and admin
-router.post('/login', async (req, res) => {
+router.post('/login', loginLimiter, async (req, res) => {
   try {
     const { email, password, redirectUrl } = req.body;
     const user = await login(
