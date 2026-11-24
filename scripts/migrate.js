@@ -32,6 +32,7 @@ async function runMigrations() {
       multipleStatements: true,
       charset: 'utf8mb4',
       timezone: 'Z',
+      ssl: config.db.ssl ? { minVersion: 'TLSv1.2', rejectUnauthorized: true } : undefined,
     });
 
     // 2. Acquire migration lock
