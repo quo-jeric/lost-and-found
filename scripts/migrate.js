@@ -25,6 +25,10 @@ async function runMigrations() {
       user: config.db.migrationUser,
       password: config.db.migrationPassword,
       database: config.db.name,
+      ssl: {
+        minVersion: 'TLSv1.2',
+        rejectUnauthorized: true,
+      },
       multipleStatements: true,
       charset: 'utf8mb4',
       timezone: 'Z',

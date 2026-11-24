@@ -7,12 +7,16 @@ export const pool = mysql.createPool({
   user: config.db.user,
   password: config.db.password,
   database: config.db.name,
+  ssl: {
+    minVersion: 'TLSv1.2',
+    rejectUnauthorized: true,
+  },
   waitForConnections: true,
-  connectionLimit: 10,
+  connectionLimit: 5,
   queueLimit: 0,
   namedPlaceholders: true,
   charset: 'utf8mb4',
-  timezone: 'Z', // JS Date <-> DB values are UTC
+  timezone: 'Z',
 });
 
 // Pin every pooled connection's session time zone to UTC.
