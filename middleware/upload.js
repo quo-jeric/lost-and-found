@@ -1,27 +1,10 @@
 import multer from 'multer';
-import path from 'node:path';
-import fs from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { AppError } from '../utils/app-error.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const uploadDir = path.resolve(__dirname, '../public/uploads/items');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => {
-    cb(null, uploadDir);
-  },
-  filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
-    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    cb(null, `item-${uniqueSuffix}${ext}`);
-  },
-});
+// Use memory storage so the file buffer is available via req.file.buffer.
+// Vercel Serverless Functions have a read-only filesystem, so disk storage
+// cannot be used in production. The buffer is streamed to Vercel Blob instead.
+const storage = multer.memoryStorage();
 
 const fileFilter = (_req, file, cb) => {
   const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp'];
@@ -40,6 +23,7 @@ const fileFilter = (_req, file, cb) => {
 
 export const uploadItemImage = multer({
   storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
+  // Keep below Vercel's 4.5 MB serverless request body limit.
+  limits: { fileSize: 4 * 1024 * 1024 }, // 4 MB
   fileFilter,
 });

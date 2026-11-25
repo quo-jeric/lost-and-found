@@ -8,6 +8,7 @@
     "dev": "nodemon server.js",
     "start": "node server.js",
     "db:migrate": "node scripts/migrate.js",
+    "db:seed": "node scripts/seed-data.js",
     "db:migrate:test": "node scripts/migrate-test.js",
     "check:no-delete": "! grep -rniE '(DELETE[[:space:]]+FROM|REPLACE[[:space:]]+INTO|TRUNCATE)' repositories services controllers routes middleware",
     "test": "npm run test:unit && npm run test:integration && npm run test:e2e",
@@ -21,6 +22,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@vercel/blob": "^2.9.0",
     "argon2": "^0.45.1",
     "dotenv": "^18.0.3",
     "ejs": "^7.0.1",

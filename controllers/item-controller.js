@@ -1,5 +1,25 @@
+import path from 'node:path';
+import { put } from '@vercel/blob';
 import * as itemsService from '../services/items-service.js';
 import { AppError } from '../utils/app-error.js';
+
+/**
+ * Upload a file buffer to Vercel Blob and return the resulting blob object.
+ * The public URL is stored in the database as `image_url`.
+ *
+ * @param {Express.Multer.File} file - Multer file object (memoryStorage)
+ * @returns {Promise<import('@vercel/blob').PutBlobResult>}
+ */
+async function uploadToBlob(file) {
+  const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
+  const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+  const pathname = `items/item-${uniqueSuffix}${ext}`;
+
+  return put(pathname, file.buffer, {
+    access: 'public',
+    contentType: file.mimetype,
+  });
+}
 
 /**
  * GET /api/v1/items
@@ -73,8 +93,8 @@ export async function uploadImageHandler(req, res, next) {
       throw new AppError('No image file uploaded.', { status: 400, code: 'FILE_REQUIRED' });
     }
 
-    const imageUrl = `/uploads/items/${req.file.filename}`;
-    return res.status(200).json({ data: { imageUrl, filename: req.file.filename } });
+    const blob = await uploadToBlob(req.file);
+    return res.status(200).json({ data: { imageUrl: blob.url, filename: blob.pathname } });
   } catch (err) {
     return next(err);
   }
@@ -94,7 +114,8 @@ export async function createItemHandler(req, res, next) {
 
     const payload = { ...(req.body ?? {}) };
     if (req.file) {
-      payload.image_url = `/uploads/items/${req.file.filename}`;
+      const blob = await uploadToBlob(req.file);
+      payload.image_url = blob.url;
     }
 
     const item = await itemsService.addItem(payload, context);
@@ -118,6 +139,13 @@ export async function updateItemHandler(req, res, next) {
     };
 
     const payload = { ...(req.body ?? {}) };
+
+    // If a new image file was uploaded, stream it to Vercel Blob and
+    // overwrite any image_url value that was sent in the request body.
+    if (req.file) {
+      const blob = await uploadToBlob(req.file);
+      payload.image_url = blob.url;
+    }
 
     // Normalize custody status values (stored, processing, claimed) to database ENUM ('active', 'inactive')
     if (payload.item_status) {
