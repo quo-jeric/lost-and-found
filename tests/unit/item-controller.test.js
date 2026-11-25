@@ -8,14 +8,21 @@ vi.mock('../../services/items-service.js', () => ({
   archiveItem: vi.fn(),
 }));
 
+// Mock Vercel Blob so tests never make real network calls.
+vi.mock('@vercel/blob', () => ({
+  put: vi.fn(),
+}));
+
 import {
   listItemsHandler,
   getItemHandler,
   createItemHandler,
   updateItemHandler,
   archiveItemHandler,
+  uploadImageHandler,
 } from '../../controllers/item-controller.js';
 import * as itemsService from '../../services/items-service.js';
+import * as vercelBlob from '@vercel/blob';
 
 function makeRes() {
   const res = {};
@@ -26,7 +33,14 @@ function makeRes() {
 }
 
 describe('Item Controller', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // Default blob mock: returns a public URL
+    vercelBlob.put.mockResolvedValue({
+      url: 'https://blob.vercel-storage.com/items/item-123.jpg',
+      pathname: 'items/item-123.jpg',
+    });
+  });
 
   describe('listItemsHandler', () => {
     it('returns 200 with data and meta for public user', async () => {
@@ -139,6 +153,35 @@ describe('Item Controller', () => {
       expect(res.json).toHaveBeenCalledWith({ data: createdItem });
     });
 
+    it('uploads image to Blob and sets image_url when req.file is present', async () => {
+      const createdItem2 = { item_id: 2, title: 'Bag', image_url: 'https://blob.vercel-storage.com/items/item-123.jpg' };
+      itemsService.addItem.mockResolvedValue(createdItem2);
+
+      const fakeBuffer = Buffer.from('img');
+      const req2 = {
+        body: { title: 'Bag' },
+        file: { buffer: fakeBuffer, mimetype: 'image/jpeg', originalname: 'bag.jpg' },
+        actorId: 3,
+        id: 'req-img',
+        ip: '10.0.0.1',
+      };
+      const res2 = makeRes();
+      const next2 = vi.fn();
+
+      await createItemHandler(req2, res2, next2);
+
+      expect(vercelBlob.put).toHaveBeenCalledWith(
+        expect.stringMatching(/^items\/item-\d+-\d+\.jpg$/),
+        fakeBuffer,
+        { access: 'public', contentType: 'image/jpeg' },
+      );
+      expect(itemsService.addItem).toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'Bag', image_url: 'https://blob.vercel-storage.com/items/item-123.jpg' }),
+        expect.any(Object),
+      );
+      expect(res2.status).toHaveBeenCalledWith(201);
+    });
+
     it('forwards error to next() on validation failure', async () => {
       const err = new Error('Validation error');
       itemsService.addItem.mockRejectedValue(err);
@@ -150,6 +193,40 @@ describe('Item Controller', () => {
       await createItemHandler(req, res, next);
 
       expect(next).toHaveBeenCalledWith(err);
+    });
+  });
+
+  describe('uploadImageHandler', () => {
+    it('returns 400 when no file is provided', async () => {
+      const req = { file: undefined };
+      const res = makeRes();
+      const next = vi.fn();
+
+      await uploadImageHandler(req, res, next);
+
+      expect(next).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 400, code: 'FILE_REQUIRED' }),
+      );
+    });
+
+    it('returns 200 with the Vercel Blob URL when a file is uploaded', async () => {
+      const req = {
+        file: { buffer: Buffer.from('img'), mimetype: 'image/png', originalname: 'photo.png' },
+      };
+      const res = makeRes();
+      const next = vi.fn();
+
+      await uploadImageHandler(req, res, next);
+
+      expect(vercelBlob.put).toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({
+        data: {
+          imageUrl: 'https://blob.vercel-storage.com/items/item-123.jpg',
+          filename: 'items/item-123.jpg',
+        },
+      });
+      expect(next).not.toHaveBeenCalled();
     });
   });
 
